@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+import os
+import re
+from datetime import date, datetime
 from pathlib import Path
+from tempfile import gettempdir
 from typing import cast
 
 import typer
@@ -18,11 +21,21 @@ from ai_policy_lab.utils import slugify
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 console = Console()
+_MODEL_NAME_RE = re.compile(r"^[a-zA-Z0-9._:/-]{1,128}$")
 
 
 @app.callback()
 def main() -> None:
     """AI Policy Research Lab CLI."""
+
+
+class _StateEncoder(json.JSONEncoder):
+    def default(self, obj: object) -> object:
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        if isinstance(obj, Path):
+            return str(obj)
+        return super().default(obj)
 
 
 @app.command()
@@ -47,6 +60,8 @@ def run(
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging."),
     quiet: bool = typer.Option(False, "--quiet", help="Reduce log output."),
 ) -> None:
+    if not question.strip():
+        raise typer.BadParameter("Research question must not be empty.")
     if quality_floor not in {"tier_1", "tier_2", "tier_3"}:
         raise typer.BadParameter("quality floor must be one of: tier_1, tier_2, tier_3")
     if verbose and quiet:
@@ -56,6 +71,8 @@ def run(
 
     runtime = ResearchRuntime.from_env()
     if model:
+        if not _MODEL_NAME_RE.match(model):
+            raise typer.BadParameter("Model name contains invalid characters.")
         runtime.settings.default_model = model
 
     sanitized_question = sanitize_user_input(question)
@@ -78,7 +95,7 @@ def run(
     state_path = target_dir / "state.json"
 
     report_path.write_text(state["full_report"], encoding="utf-8")
-    state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    state_path.write_text(json.dumps(state, indent=2, cls=_StateEncoder), encoding="utf-8")
 
     mode_label = "mock" if runtime.settings.use_mock else "live"
     console.print(
@@ -98,10 +115,18 @@ def _default_output_dir(*, runtime: ResearchRuntime, question: str) -> Path:
 
 def _validate_output_dir(target_dir: Path, *, runs_dir: Path) -> Path:
     resolved = target_dir.resolve()
-    allowed_roots = [Path.cwd().resolve(), runs_dir.resolve()]
+    allowed_roots = [
+        Path.cwd().resolve(),
+        runs_dir.resolve(),
+        Path(os.sep, "tmp").resolve(),
+        Path(gettempdir()).resolve(),
+    ]
     if any(_is_within(resolved, root) for root in allowed_roots):
         return resolved
-    raise typer.BadParameter(f"Output dir must be within {allowed_roots[0]} or {allowed_roots[1]}")
+    raise typer.BadParameter(
+        "Output dir must be within the current workspace, the configured runs directory, "
+        "or the system temporary directory."
+    )
 
 
 def _is_within(candidate: Path, root: Path) -> bool:

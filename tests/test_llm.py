@@ -32,20 +32,22 @@ def _settings() -> Settings:
 
 
 class _FakeResponse:
-    def __init__(self, body):
+    def __init__(self, body: object, *, exc: Exception | None = None, text: str | None = None):
         self._body = body
-        self.text = json.dumps(body)
+        self._exc = exc
+        self.text = text if text is not None else json.dumps(body)
 
     def raise_for_status(self) -> None:
-        return None
+        if self._exc is not None:
+            raise self._exc
 
-    def json(self):
+    def json(self) -> object:
         return self._body
 
 
 class _FakeClient:
-    def __init__(self, response_body):
-        self._response_body = response_body
+    def __init__(self, response: object):
+        self._response = response
 
     def __enter__(self):
         return self
@@ -55,16 +57,76 @@ class _FakeClient:
 
     def post(self, url, json, headers):  # noqa: A002
         _ = (url, json, headers)
-        return _FakeResponse(self._response_body)
+        if isinstance(self._response, Exception):
+            raise self._response
+        return self._response
+
+
+def _patch_client(monkeypatch, response: object) -> None:
+    monkeypatch.setattr(httpx, "Client", lambda timeout: _FakeClient(response))
+
+
+def _http_error(response: _FakeResponse) -> httpx.HTTPStatusError:
+    request = httpx.Request("POST", "http://localhost:11434/v1/chat/completions")
+    return httpx.HTTPStatusError("boom", request=request, response=response)
+
+
+def test_llm_generate_returns_content(monkeypatch) -> None:
+    _patch_client(monkeypatch, _FakeResponse({"choices": [{"message": {"content": " answer "}}]}))
+    llm = OpenAICompatibleLLM(settings=_settings())
+
+    assert llm.generate(agent_name="research_director", system_prompt="system", user_prompt="user") == "answer"
 
 
 def test_llm_generate_validates_missing_choices(monkeypatch) -> None:
-    monkeypatch.setattr(httpx, "Client", lambda timeout: _FakeClient({"unexpected": []}))
+    _patch_client(monkeypatch, _FakeResponse({"unexpected": []}))
     llm = OpenAICompatibleLLM(settings=_settings())
 
     with pytest.raises(LLMResponseError, match="no choices"):
-        llm.generate(
-            agent_name="research_director",
-            system_prompt="system",
-            user_prompt="user",
-        )
+        llm.generate(agent_name="research_director", system_prompt="system", user_prompt="user")
+
+
+def test_llm_generate_validates_empty_choices_array(monkeypatch) -> None:
+    _patch_client(monkeypatch, _FakeResponse({"choices": []}))
+    llm = OpenAICompatibleLLM(settings=_settings())
+
+    with pytest.raises(LLMResponseError, match="no choices"):
+        llm.generate(agent_name="research_director", system_prompt="system", user_prompt="user")
+
+
+def test_llm_generate_validates_missing_content(monkeypatch) -> None:
+    _patch_client(monkeypatch, _FakeResponse({"choices": [{"message": {}}]}))
+    llm = OpenAICompatibleLLM(settings=_settings())
+
+    with pytest.raises(LLMResponseError, match="missing content"):
+        llm.generate(agent_name="research_director", system_prompt="system", user_prompt="user")
+
+
+def test_llm_generate_wraps_http_errors(monkeypatch) -> None:
+    response = _FakeResponse({"error": "failure"})
+    response._exc = _http_error(response)  # type: ignore[attr-defined]
+    _patch_client(monkeypatch, response)
+    llm = OpenAICompatibleLLM(settings=_settings())
+
+    with pytest.raises(LLMResponseError, match="HTTP status error"):
+        llm.generate(agent_name="research_director", system_prompt="system", user_prompt="user")
+
+
+def test_llm_generate_wraps_timeouts(monkeypatch) -> None:
+    _patch_client(monkeypatch, httpx.TimeoutException("timeout"))
+    llm = OpenAICompatibleLLM(settings=_settings())
+
+    with pytest.raises(LLMResponseError, match="timed out"):
+        llm.generate(agent_name="research_director", system_prompt="system", user_prompt="user")
+
+
+def test_llm_generate_wraps_invalid_json(monkeypatch) -> None:
+    class _BadResponse(_FakeResponse):
+        def json(self) -> object:
+            raise json.JSONDecodeError("bad json", doc="", pos=0)
+
+    _patch_client(monkeypatch, _BadResponse({}, text="not json"))
+    llm = OpenAICompatibleLLM(settings=_settings())
+
+    with pytest.raises(LLMResponseError, match="invalid JSON"):
+        llm.generate(agent_name="research_director", system_prompt="system", user_prompt="user")

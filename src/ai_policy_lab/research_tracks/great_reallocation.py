@@ -173,6 +173,8 @@ _ANALYSIS_MIN_EMPLOYED = 250_000
 def is_great_reallocation_question(root_question: str) -> bool:
     normalized = root_question.lower()
     keywords = [
+        "great reallocation",
+        "ai-driven automation",
         "ai adoption",
         "occupational structure",
         "labor market",
@@ -180,7 +182,12 @@ def is_great_reallocation_question(root_question: str) -> bool:
         "education levels",
         "distributional consequences",
     ]
-    return _FLAGSHIP_QUESTION in normalized or sum(term in normalized for term in keywords) >= 3
+    return (
+        _FLAGSHIP_QUESTION in normalized
+        or "great reallocation" in normalized
+        or "ai-driven automation" in normalized
+        or sum(term in normalized for term in keywords) >= 2
+    )
 
 
 def is_upskilling_pathways_question(root_question: str) -> bool:
@@ -236,8 +243,8 @@ def get_great_reallocation_subquestions() -> list[ResearchQuestion]:
         {
             "id": "rq-4",
             "question": (
-                "What occupational transition pathways exist for workers in high-exposure "
-                "occupations, and how do transition costs vary across workers?"
+                "What occupational transition pathways and bridge occupations exist for workers in high-exposure "
+                "and stepping-stone occupations, and how do transition costs vary across workers?"
             ),
             "parent_question": None,
             "status": "pending",

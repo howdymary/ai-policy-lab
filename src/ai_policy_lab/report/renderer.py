@@ -6,7 +6,10 @@ from ai_policy_lab.state import AdversarialReviewItem, ResearchQuestion, Researc
 def _render_questions(questions: list[ResearchQuestion]) -> str:
     if not questions:
         return "- No research questions were generated.\n"
-    return "".join(f"- {item['question']} ({item['priority']})\n" for item in questions)
+    return "".join(
+        f"- {item.get('question', 'No question')} ({item.get('priority', 'unknown')})\n"
+        for item in questions
+    )
 
 
 def _render_findings(state: ResearchState) -> str:
@@ -19,8 +22,9 @@ def _render_findings(state: ResearchState) -> str:
     lines = []
     for finding in state["findings"]:
         lines.append(
-            f"- {finding['claim']} "
-            f"[evidence: {finding['evidence_strength']}, confidence: {finding['confidence']:.2f}]"
+            f"- {finding.get('claim', 'No claim')} "
+            f"[evidence: {finding.get('evidence_strength', 'unknown')}, "
+            f"confidence: {float(finding.get('confidence', 0.0)):.2f}]"
         )
     return "\n".join(lines) + "\n"
 
@@ -29,7 +33,8 @@ def _render_datasets(state: ResearchState) -> str:
     if not state["datasets"]:
         return "- No datasets cataloged.\n"
     return "".join(
-        f"- {dataset['name']} ({dataset['source_agency']}) — {dataset['url']}\n"
+        f"- {dataset.get('name', 'Unnamed')} ({dataset.get('source_agency', 'Unknown')}) — "
+        f"{dataset.get('url', 'N/A')}\n"
         for dataset in state["datasets"]
     )
 
@@ -39,11 +44,11 @@ def _render_adversarial_review(items: list[AdversarialReviewItem]) -> str:
         return "- No adversarial review items were logged.\n"
     lines = []
     for item in items:
-        sources = ", ".join(item["supporting_sources"]) if item["supporting_sources"] else "none"
+        sources = ", ".join(item.get("supporting_sources") or []) or "none"
         lines.append(
-            f"- [{item['recommendation']}] {item['finding_claim']} "
-            f"Counterargument: {item['counterargument']} "
-            f"[counter-evidence: {item['evidence_strength']}; sources: {sources}]"
+            f"- [{item.get('recommendation', 'N/A')}] {item.get('finding_claim', 'N/A')} "
+            f"Counterargument: {item.get('counterargument', 'N/A')} "
+            f"[counter-evidence: {item.get('evidence_strength', 'unknown')}; sources: {sources}]"
         )
     return "\n".join(lines) + "\n"
 

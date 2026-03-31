@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
 from ai_policy_lab.runtime import ResearchRuntime
+from ai_policy_lab.sanitize import wrap_user_content, wrap_user_list
 from ai_policy_lab.state import ResearchState
 
 SYSTEM_PROMPT = """You are an academic methods reviewer. Check research design, statistical rigor,
@@ -18,27 +19,45 @@ class MethodologyReviewerAgent(BaseResearchAgent):
         analysis_type = state["quantitative_results"].get("analysis_type", "unknown")
         issues = []
         if status != "completed":
-            issues.append(
-                "WARNING: Quantitative analysis is still scaffold-level; no effect sizes, confidence intervals, or robustness checks were produced."
-            )
-            review = (
+            fallback = (
                 "Methodology review completed. The current run documents a plausible design, but it is not yet a "
                 "replicable empirical study because no live data pipeline or estimation output was executed."
             )
         elif analysis_type == "descriptive_index":
-            issues.append(
-                "NOTE: The current live analysis is reproducible and data-backed, but it remains descriptive; no causal identification, uncertainty intervals, or robustness sweeps were estimated yet."
-            )
-            review = (
-                "Methodology review completed. This run executes a reproducible descriptive metro exposure index "
-                "using O*NET, ACS, and CBP. The design is appropriate for comparative ranking and hypothesis "
-                "generation, but conclusions should remain descriptive because the pipeline does not yet estimate "
-                "causal effects, sampling uncertainty, or specification sensitivity."
+            fallback = (
+                "Methodology review completed. This run executes a reproducible descriptive index using the available "
+                "source state. The design is appropriate for comparative ranking and hypothesis generation, but "
+                "conclusions should remain descriptive because the pipeline does not yet estimate causal effects, "
+                "sampling uncertainty, or specification sensitivity."
             )
         else:
-            review = (
+            fallback = (
                 "Methodology review completed. A live quantitative path was executed, but its inferential scope "
                 "should still be checked carefully against the claims made in the final report."
+            )
+
+        review = runtime.maybe_generate(
+            agent_name=self.name,
+            system_prompt=self.system_prompt,
+            user_prompt=(
+                f"{wrap_user_content('root_question', state['root_question'])}\n"
+                f"{wrap_user_list('research_questions', [item['question'] for item in state['research_questions']], item_tag='question')}\n"
+                f"{wrap_user_content('methodology_description', state['methodology_description'])}\n"
+                f"<quantitative_status>{status}</quantitative_status>\n"
+                f"<analysis_type>{analysis_type}</analysis_type>\n"
+                f"{wrap_user_list('findings', [item['claim'] for item in state['findings']], item_tag='finding')}\n"
+                "Assess research design appropriateness, statistical rigor, replicability, intellectual honesty, and claim scope."
+            ),
+            fallback=fallback,
+            temperature=0.1,
+        )
+        if status != "completed":
+            issues.append(
+                "WARNING: Quantitative analysis is still scaffold-level; no effect sizes, confidence intervals, or robustness checks were produced."
+            )
+        elif analysis_type == "descriptive_index":
+            issues.append(
+                "NOTE: The current live analysis is reproducible and data-backed, but it remains descriptive; no causal identification, uncertainty intervals, or robustness sweeps were estimated yet."
             )
         return {
             "methodology_review": review,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
 from ai_policy_lab.runtime import ResearchRuntime
+from ai_policy_lab.sanitize import wrap_user_content, wrap_user_list
 from ai_policy_lab.state import ResearchState
 
 SYSTEM_PROMPT = """You are the quality gate for citations, source tiers, provenance, recency,
@@ -18,11 +19,26 @@ class SourceQualityAuditorAgent(BaseResearchAgent):
         issues = []
         tier_1_count = sum(1 for source in state["sources"] if source["source_tier"] == "tier_1")
         tier_2_count = sum(1 for source in state["sources"] if source["source_tier"] == "tier_2")
-        report = (
+        fallback = (
             f"Source audit completed on {source_count} captured sources, including "
             f"{tier_1_count} Tier 1 and {tier_2_count} Tier 2 records. "
-            "The bibliography is now populated for the flagship live research paths, but policy-source ingestion "
-            "and source-to-claim validation still need to be completed before publication."
+            "The bibliography is now populated for the flagship live research paths, but source-to-claim validation "
+            "still needs to be completed before publication."
+        )
+        report = runtime.maybe_generate(
+            agent_name=self.name,
+            system_prompt=self.system_prompt,
+            user_prompt=(
+                f"{wrap_user_content('root_question', state['root_question'])}\n"
+                f"<source_count>{source_count}</source_count>\n"
+                f"<tier_1_count>{tier_1_count}</tier_1_count>\n"
+                f"<tier_2_count>{tier_2_count}</tier_2_count>\n"
+                f"{wrap_user_list('source_titles', [source['title'] for source in state['sources']], item_tag='source')}\n"
+                f"{wrap_user_content('policy_landscape_summary', state['policy_landscape_summary'])}\n"
+                "Verify citation quality, source tiers, recency, and conflicts of interest. Return a concise audit summary."
+            ),
+            fallback=fallback,
+            temperature=0.1,
         )
         if source_count == 0:
             issues.append(

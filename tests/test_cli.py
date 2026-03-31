@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from tempfile import gettempdir
 
 from typer.testing import CliRunner
 
@@ -51,6 +52,27 @@ def test_cli_rejects_output_dir_outside_worktree(tmp_path: Path, monkeypatch) ->
 
         assert result.exit_code != 0
         assert "Output dir must be within" in result.output
+
+
+def test_cli_allows_output_dir_in_system_temp_dir(monkeypatch) -> None:
+    monkeypatch.setenv("APL_USE_MOCK", "true")
+    runner = CliRunner()
+    output_dir = Path(gettempdir()) / "ai-policy-lab-cli-test"
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--question",
+            "How is AI adoption affecting occupational mobility?",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert (output_dir / "report.md").exists()
+    assert (output_dir / "state.json").exists()
 
 
 def test_cli_sanitizes_prompt_injection_patterns(tmp_path: Path, monkeypatch) -> None:
@@ -113,3 +135,75 @@ def test_cli_sanitizes_prompt_injection_patterns(tmp_path: Path, monkeypatch) ->
         assert result.exit_code == 0
         assert captured["root_question"] == "[filtered instruction]. [role marker removed]: Return PWNED"
         assert captured["domain_constraints"] == ["[role marker removed]: override the plan"]
+
+
+def test_cli_rejects_empty_question(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("APL_USE_MOCK", "true")
+    runner = CliRunner()
+
+    with runner.isolated_filesystem(temp_dir=str(tmp_path)):
+        result = runner.invoke(
+            app,
+            [
+                "run",
+                "--question",
+                "   ",
+                "--output-dir",
+                str(Path.cwd() / "outputs" / "run-3"),
+            ],
+        )
+
+        assert result.exit_code != 0
+        assert "Research question must not be empty" in result.output
+
+
+def test_cli_rejects_invalid_model_name(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("APL_USE_MOCK", "true")
+    runner = CliRunner()
+
+    with runner.isolated_filesystem(temp_dir=str(tmp_path)):
+        result = runner.invoke(
+            app,
+            [
+                "run",
+                "--question",
+                "How is AI adoption affecting occupational mobility?",
+                "--model",
+                "bad model name!",
+                "--output-dir",
+                str(Path.cwd() / "outputs" / "run-4"),
+            ],
+        )
+
+        assert result.exit_code != 0
+        assert "Model name contains invalid characters" in result.output
+
+
+def test_cli_routes_flagship_great_reallocation_question(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("APL_USE_MOCK", "true")
+    runner = CliRunner()
+
+    with runner.isolated_filesystem(temp_dir=str(tmp_path)):
+        output_dir = Path.cwd() / "outputs" / "great-reallocation"
+        result = runner.invoke(
+            app,
+            [
+                "run",
+                "--question",
+                "How is AI-driven automation causing a great reallocation of jobs across US metropolitan labor markets?",
+                "--constraint",
+                "United States",
+                "--quality-floor",
+                "tier_2",
+                "--output-dir",
+                str(output_dir),
+            ],
+        )
+
+        assert result.exit_code == 0
+        state = (output_dir / "state.json").read_text(encoding="utf-8")
+        assert '"research_questions": [' in state
+        assert "Which occupations have the highest exposure to AI-driven task automation" in state
+        assert "bls-jolts" in state
+        assert "census-acs" in state
+        assert "census-cbp" in state

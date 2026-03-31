@@ -44,3 +44,23 @@ def test_run_research_returns_partial_state_on_graph_failure(monkeypatch) -> Non
     assert final_state["run_errors"] == ["boom"]
     assert final_state["existing_literature_summary"] == "partial"
     assert "boom" in final_state["full_report"]
+
+
+def test_run_research_uses_specialized_great_reallocation_track(monkeypatch) -> None:
+    monkeypatch.setenv("APL_USE_MOCK", "true")
+    runtime = ResearchRuntime.from_env()
+
+    final_state = run_research(
+        runtime=runtime,
+        root_question="How is AI-driven automation causing a great reallocation of jobs across US metropolitan labor markets?",
+        domain_constraints=["United States"],
+        quality_floor="tier_2",
+    )
+
+    assert len(final_state["research_questions"]) == 6
+    assert any(
+        "highest exposure to ai-driven task automation" in question["question"].lower()
+        for question in final_state["research_questions"]
+    )
+    assert any(dataset["id"] == "bls-jolts" for dataset in final_state["datasets"])
+    assert any(source["id"].startswith("doi-") for source in final_state["sources"])

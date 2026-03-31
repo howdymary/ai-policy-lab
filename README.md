@@ -1,34 +1,34 @@
 # AI Policy Research Lab
 
-`ai-policy-lab` is the research engine behind `jobanxiety.ai`: a LangGraph-based, multi-agent policy research system for producing graduate-level reports, structured source audits, and normalized public dataset manifests.
+`ai-policy-lab` is the research engine behind `jobanxiety.ai`: a LangGraph-based, multi-agent policy research system for structured reports, source audits, and dataset manifests.
 
-The first target domain is AI labor market intelligence. The first flagship question is:
+The current flagship focus is AI labor market intelligence. The main research question is:
 
 > How is AI adoption reshaping the occupational structure of the U.S. labor market, and what are the distributional consequences across geographies, education levels, and demographic groups?
 
-## What this repo includes
+## What’s Included
 
-- A typed shared state bus (`ResearchState`) modeled on the system spec
-- A LangGraph DAG with discovery, analysis, audit, and synthesis phases
-- Specialist agent modules with prompts derived from the design document
-- Connector scaffolding for BLS, FRED, Census, O*NET, scholar search, and web search
-- A report renderer that turns final state into a structured markdown report
-- A CLI for running research jobs and writing outputs to `runs/`
-- Tests for state initialization, graph flow, report rendering, and CLI behavior
+- A typed shared state bus (`ResearchState`) with append-only reducers for auditability
+- A LangGraph DAG with intake, discovery, midcourse refinement, analysis, quality gate, and synthesis phases
+- Ten specialist agents, including adversarial review and the Research Director orchestrator
+- Connectors for BLS, Census, FRED, O*NET, Federal Register, Crossref, Semantic Scholar, and a web-search placeholder
+- A markdown report renderer and CLI for writing `report.md` and `state.json` artifacts to `runs/`
+- Support for mock mode and live OpenAI-compatible LLM endpoints, including local Ollama
+- Tests covering state initialization, graph flow, CLI behavior, config validation, sanitization, and core agent paths
 
-## Current scope
+## Current Scope
 
-This first commit is a serious scaffold, not a finished research product.
+This repo is a working scaffold with real live discovery paths for the flagship labor-market track, not a finished public data product.
 
-- The graph, agents, state schema, CLI, and output pipeline are implemented
-- Connectors are present as real client stubs and extension points
-- Mock mode is fully supported for local development and testing
-- Live LLM mode is supported through any OpenAI-compatible endpoint, including Ollama
-- Full live retrieval, structured source extraction, and empirical analysis still need to be filled in
+- The graph, CLI, report renderer, and state schema are implemented
+- Live retrieval exists for several federal and academic sources
+- Mock mode works for local development and test runs
+- The `Great Reallocation` and `Upskilling Pathways` tracks are wired as specialized paths
+- Some deeper public-release features, such as a persistent knowledge base and notebook generation, are still future work
 
 ## Quickstart
 
-### 1. Install dependencies
+### 1. Install Dependencies
 
 ```bash
 python3 -m venv .venv
@@ -38,17 +38,17 @@ pip install poetry
 poetry install
 ```
 
-### 2. Configure environment
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-By default, the project runs in mock mode so you can exercise the DAG without API keys.
+The project defaults to mock mode, so you can exercise the DAG without API keys.
 
-## API key setup
+## API Keys
 
-All core government data APIs used here are free:
+The core government data APIs are free:
 
 - BLS API: [data.bls.gov/registrationEngine](https://data.bls.gov/registrationEngine/)
 - FRED API: [fred.stlouisfed.org/docs/api/api_key.html](https://fred.stlouisfed.org/docs/api/api_key.html)
@@ -56,19 +56,18 @@ All core government data APIs used here are free:
 - O*NET Web Services: [services.onetcenter.org/reference/register](https://services.onetcenter.org/reference/register)
 - Semantic Scholar API: [semanticscholar.org/product/api](https://www.semanticscholar.org/product/api)
 
-Setup:
+Optional local/OpenAI-compatible setup:
 
 ```bash
-cp .env.example .env
+export OPENAI_BASE_URL=http://localhost:11434/v1
+export OPENAI_API_KEY=ollama
+export APL_DEFAULT_MODEL=qwopus-q4km
+export APL_USE_MOCK=false
 ```
 
-Then fill in the keys you want to use and verify the connector layer with:
+## Run It
 
-```bash
-poetry run pytest -q
-```
-
-### 3. Run a mock research job
+Run a mock job:
 
 ```bash
 poetry run ai-policy-lab run \
@@ -78,42 +77,10 @@ poetry run ai-policy-lab run \
   --quality-floor tier_2
 ```
 
-Outputs land in `runs/<timestamp>-<slug>/`.
-
-## Using a local Ollama model
-
-The CLI can talk to any OpenAI-compatible endpoint. To use the local model you just set up in Ollama:
-
-```bash
-export OPENAI_BASE_URL=http://localhost:11434/v1
-export OPENAI_API_KEY=ollama
-export APL_DEFAULT_MODEL=qwopus-q4km
-export APL_USE_MOCK=false
-```
-
-Then run:
+Run the flagship Great Reallocation track:
 
 ```bash
 poetry run ai-policy-lab run \
-  --question "How is AI adoption reshaping occupational structure in the U.S. labor market?" \
-  --constraint "United States" \
-  --constraint "2015-2025" \
-  --quality-floor tier_2
-```
-
-## Great Reallocation live discovery path
-
-The first real end-to-end discovery path is wired for the flagship question:
-
-- Research Director uses the six Great Reallocation sub-questions from the system spec
-- Data Scout performs live BLS and Census retrieval and records real coverage notes
-- Literature Review builds a real source inventory anchored in the benchmark papers and Brookings reports
-- FRED retrieval is supported when `FRED_API_KEY` is configured
-
-Example:
-
-```bash
-APL_USE_MOCK=false OPENAI_API_KEY='' poetry run ai-policy-lab run \
   --question "How is AI adoption reshaping the occupational structure of the U.S. labor market, and what are the distributional consequences across geographies, education levels, and demographic groups?" \
   --constraint "United States" \
   --constraint "2015-2025" \
@@ -121,35 +88,52 @@ APL_USE_MOCK=false OPENAI_API_KEY='' poetry run ai-policy-lab run \
   --quality-floor tier_2
 ```
 
-Without `FRED_API_KEY`, the run still performs live BLS and Census discovery and records FRED as a cataloged-but-unfetched macro layer.
+Outputs land in `runs/<timestamp>-<slug>/`.
 
-## Project layout
+## Testing
+
+Run the full local check suite:
+
+```bash
+poetry run pytest -v
+poetry run mypy src/
+poetry run ruff check .
+poetry run bandit -r src/ -q
+```
+
+To run coverage locally:
+
+```bash
+poetry run pytest --cov=ai_policy_lab --cov-fail-under=85
+```
+
+## Troubleshooting
+
+- If you see `OPENAI_API_KEY must be set`, either enable mock mode with `APL_USE_MOCK=true` or set a non-empty key for your OpenAI-compatible endpoint.
+- If FRED requests fail with a missing-key error, set `FRED_API_KEY`.
+- If Semantic Scholar returns 429s, add `SEMANTIC_SCHOLAR_API_KEY`.
+- If a run fails early, check `state.json` for `run_status` and `run_errors`.
+
+## Docs
+
+- [Architecture](./ARCHITECTURE.md)
+- [Contributing](./CONTRIBUTING.md)
+
+## Project Layout
 
 ```text
 src/ai_policy_lab/
   agents/         agent prompts and node implementations
-  connectors/     external data client interfaces and stubs
+  connectors/     external data clients and shared HTTP utilities
   report/         final report renderer
   cli.py          Typer CLI
   config.py       environment-driven runtime settings
   graph.py        LangGraph DAG assembly
   llm.py          OpenAI-compatible LLM client
   state.py        typed state schema and helpers
-tests/
-  graph, report, and CLI smoke coverage
+tests/            CLI, graph, agent, config, runtime, and sanitization coverage
 ```
 
-## Design notes
+## Status
 
-- Agents communicate through a shared typed state dictionary, not direct calls
-- Append-only list fields use LangGraph reducers (`operator.add`) for auditability
-- The quality gate is sequential by design: source audit, then methodology review, then synthesis
-- The runtime is explicitly designed to support per-agent model overrides later
-
-## Next milestones
-
-1. Replace discovery stubs with live search + source extraction pipelines
-2. Wire connector outputs into the Data Scout and Literature Review agents
-3. Add structured source parsing and bibliography normalization
-4. Implement real quantitative analysis and dataset normalization workflows
-5. Add SSE/web delivery for `jobanxiety.ai`
+The repo is in active release-prep mode. The current codebase has passing tests and hardened connector/runtime behavior, and the remaining work is mostly about documentation polish and future feature depth.

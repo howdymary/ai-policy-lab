@@ -39,6 +39,7 @@ class EconomicComplexityAgent(BaseResearchAgent):
                 ],
             }
 
+        root_question = state["root_question"]
         supporting_sources = [source["id"] for source in state["sources"][:4]]
         regional_datasets = [
             dataset["name"]
@@ -50,7 +51,7 @@ class EconomicComplexityAgent(BaseResearchAgent):
         fallback_finding: Finding = {
             "agent": self.name,
             "claim": (
-                "The current question is likely to hinge on place-specific capability differences rather than national averages alone, "
+                f"The current question '{root_question}' is likely to hinge on place-specific capability differences rather than national averages alone, "
                 "which means the most valuable next evidence is regional data that can distinguish locations with adjacent capabilities "
                 "from those facing harder infrastructure, institutional, or industry-composition gaps."
             ),
@@ -74,13 +75,13 @@ class EconomicComplexityAgent(BaseResearchAgent):
             user_prompt=(
                 "Return a JSON object with keys "
                 '"claim", "evidence_strength", "confidence", "methodology", "limitations".\n'
-                f"{wrap_user_content('root_question', state['root_question'])}\n"
+                f"{wrap_user_content('root_question', root_question)}\n"
                 f"{wrap_user_list('constraints', state['domain_constraints'], item_tag='constraint')}\n"
                 f"{wrap_user_list('research_questions', [item['question'] for item in state['research_questions']], item_tag='question')}\n"
                 f"{wrap_user_list('regional_datasets', regional_datasets, item_tag='dataset')}\n"
                 f"{wrap_user_list('all_datasets', [item['name'] for item in state['datasets']], item_tag='dataset')}\n"
                 f"{wrap_user_list('quantitative_findings', [item['claim'] for item in state['findings']], item_tag='finding')}\n"
-                "Produce one careful economic-complexity finding about capability gaps, adjacency, and the level of geography needed to answer the question well."
+                "Produce one careful economic-complexity finding about capability gaps, adjacency, and the level of geography needed to answer the question well. Keep the memo aligned to the root question topic."
             ),
             fallback=json.dumps({key: value for key, value in fallback_finding.items() if key != "agent"}),
             temperature=0.1,

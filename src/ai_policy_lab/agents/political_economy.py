@@ -18,11 +18,12 @@ class PoliticalEconomyAgent(BaseResearchAgent):
     system_prompt = SYSTEM_PROMPT
 
     def run(self, state: ResearchState, runtime: ResearchRuntime) -> StatePatch:
+        root_question = state["root_question"]
         supporting_sources = _supporting_sources(state)
         fallback_finding: Finding = {
             "agent": self.name,
             "claim": (
-                f"The current evidence base suggests that the costs and benefits tied to {state['root_question']} "
+                f"The current evidence base suggests that the costs and benefits tied to {root_question} "
                 "are unlikely to be evenly distributed: actors with less institutional flexibility, weaker bargaining "
                 "power, or thinner local support systems are more likely to absorb transition costs first."
             ),
@@ -46,7 +47,7 @@ class PoliticalEconomyAgent(BaseResearchAgent):
             user_prompt=(
                 "Return a JSON object with keys "
                 '"claim", "evidence_strength", "confidence", "methodology", "limitations".\n'
-                f"{wrap_user_content('root_question', state['root_question'])}\n"
+                f"{wrap_user_content('root_question', root_question)}\n"
                 f"{wrap_user_list('constraints', state['domain_constraints'], item_tag='constraint')}\n"
                 f"{wrap_user_list('research_questions', [item['question'] for item in state['research_questions']], item_tag='question')}\n"
                 f"{wrap_user_content('literature_summary', state['existing_literature_summary'])}\n"
@@ -54,7 +55,7 @@ class PoliticalEconomyAgent(BaseResearchAgent):
                 f"{wrap_user_content('policy_summary', state['policy_landscape_summary'])}\n"
                 f"{wrap_user_list('quantitative_findings', [item['claim'] for item in state['findings']], item_tag='finding')}\n"
                 "Produce one careful political-economy finding that identifies who likely bears costs, which institutions matter most, "
-                "and how confident the current evidence justifies being."
+                "and how confident the current evidence justifies being. Keep the claim aligned to the root question topic."
             ),
             fallback=json.dumps({key: value for key, value in fallback_finding.items() if key != "agent"}),
             temperature=0.1,
