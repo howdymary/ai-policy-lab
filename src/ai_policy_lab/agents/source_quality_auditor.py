@@ -28,7 +28,7 @@ class SourceQualityAuditorAgent(BaseResearchAgent):
             issues.append(
                 "BLOCKER: No live sources were ingested, so claims cannot yet meet the Tier 1/Tier 2 citation standard."
             )
-        elif state["policy_landscape_summary"].startswith("Mock mode: policy scanner"):
+        elif "policy scanner is not connected" in state["policy_landscape_summary"].lower():
             issues.append(
                 "WARNING: Policy discovery is still stubbed, so legislative and regulatory claims are not yet covered by live primary sources."
             )

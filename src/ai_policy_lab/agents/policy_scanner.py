@@ -19,9 +19,9 @@ class PolicyScannerAgent(BaseResearchAgent):
             "Summarize the active policy landscape, key institutions, and historical precedents."
         )
         fallback = (
-            "Mock mode: policy scanner not connected to congress.gov, Federal Register, or agency sources yet. "
-            "In production, this node should extract active legislation, agency initiatives, evaluation evidence, "
-            "and relevant historical precedents."
+            "Policy scanner is not connected to congress.gov, Federal Register, or agency sources yet. "
+            "A full production run should extract active legislation, agency initiatives, evaluation evidence, "
+            "and relevant historical precedents from primary institutional sources."
         )
         return {
             "policy_landscape_summary": runtime.maybe_generate(
