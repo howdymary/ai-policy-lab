@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-import httpx
-
 from ai_policy_lab.connectors.base import BaseConnector
 
 
 class BLSConnector(BaseConnector):
     base_url = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
+    rate_limit_max_calls = 100
+    rate_limit_period_seconds = 60.0
 
     def timeseries(
         self,
@@ -25,7 +25,5 @@ class BLSConnector(BaseConnector):
         if self.settings.bls_api_key:
             payload["registrationkey"] = self.settings.bls_api_key
 
-        with httpx.Client(timeout=self.timeout) as client:
-            response = client.post(self.base_url, json=payload)
-            response.raise_for_status()
-            return dict(response.json())
+        result = self._post_json(self.base_url, json_body=payload)
+        return dict(result)

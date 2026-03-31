@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import logging
+from typing import Any, cast
+
 from langgraph.graph import END, START, StateGraph
 
 from ai_policy_lab.agents import (
@@ -14,25 +17,29 @@ from ai_policy_lab.agents import (
     ResearchDirectorAgent,
     SourceQualityAuditorAgent,
 )
+from ai_policy_lab.report import render_report
 from ai_policy_lab.runtime import ResearchRuntime
 from ai_policy_lab.state import QualityFloor, ResearchState, make_initial_state
 
+logger = logging.getLogger(__name__)
 
-def build_graph(runtime: ResearchRuntime):
+
+def build_graph(runtime: ResearchRuntime) -> Any:
     workflow = StateGraph(ResearchState)
+    workflow_any = cast(Any, workflow)
 
-    workflow.add_node("research_director_intake", ResearchDirectorAgent("intake").as_node(runtime))
-    workflow.add_node("literature_review", LiteratureReviewAgent().as_node(runtime))
-    workflow.add_node("data_scout", DataScoutAgent().as_node(runtime))
-    workflow.add_node("policy_scanner", PolicyScannerAgent().as_node(runtime))
-    workflow.add_node("research_director_midcourse", ResearchDirectorAgent("midcourse").as_node(runtime))
-    workflow.add_node("quantitative_analyst", QuantitativeAnalystAgent().as_node(runtime))
-    workflow.add_node("political_economy", PoliticalEconomyAgent().as_node(runtime))
-    workflow.add_node("economic_complexity", EconomicComplexityAgent().as_node(runtime))
-    workflow.add_node("source_quality_auditor", SourceQualityAuditorAgent().as_node(runtime))
-    workflow.add_node("methodology_reviewer", MethodologyReviewerAgent().as_node(runtime))
-    workflow.add_node("adversarial_reviewer", AdversarialReviewerAgent().as_node(runtime))
-    workflow.add_node("research_director_synthesis", ResearchDirectorAgent("synthesis").as_node(runtime))
+    workflow_any.add_node("research_director_intake", ResearchDirectorAgent("intake").as_node(runtime))
+    workflow_any.add_node("literature_review", LiteratureReviewAgent().as_node(runtime))
+    workflow_any.add_node("data_scout", DataScoutAgent().as_node(runtime))
+    workflow_any.add_node("policy_scanner", PolicyScannerAgent().as_node(runtime))
+    workflow_any.add_node("research_director_midcourse", ResearchDirectorAgent("midcourse").as_node(runtime))
+    workflow_any.add_node("quantitative_analyst", QuantitativeAnalystAgent().as_node(runtime))
+    workflow_any.add_node("political_economy", PoliticalEconomyAgent().as_node(runtime))
+    workflow_any.add_node("economic_complexity", EconomicComplexityAgent().as_node(runtime))
+    workflow_any.add_node("source_quality_auditor", SourceQualityAuditorAgent().as_node(runtime))
+    workflow_any.add_node("methodology_reviewer", MethodologyReviewerAgent().as_node(runtime))
+    workflow_any.add_node("adversarial_reviewer", AdversarialReviewerAgent().as_node(runtime))
+    workflow_any.add_node("research_director_synthesis", ResearchDirectorAgent("synthesis").as_node(runtime))
 
     workflow.add_edge(START, "research_director_intake")
     workflow.add_edge("research_director_intake", "literature_review")
@@ -72,5 +79,34 @@ def run_research(
         quality_floor=quality_floor,
     )
     graph = build_graph(runtime)
-    final_state = graph.invoke(initial_state)
-    return final_state
+    last_state: dict[str, object] = dict(initial_state)
+    try:
+        for streamed_state in graph.stream(initial_state, stream_mode="values"):
+            if isinstance(streamed_state, dict):
+                last_state = dict(streamed_state)
+        final_state = dict(last_state)
+        final_state["run_status"] = "completed"
+        final_state["run_errors"] = []
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Research run failed before graph completion.")
+        final_state = dict(last_state)
+        final_state["run_status"] = "failed"
+        final_state["run_errors"] = [*_string_list(final_state.get("run_errors")), str(exc)]
+        final_state["flagged_issues"] = [
+            *_string_list(final_state.get("flagged_issues")),
+            f"BLOCKER: Research run failed before completion: {exc}",
+        ]
+        final_state["executive_summary"] = final_state.get(
+            "executive_summary",
+            "",
+        ) or "This research run failed before the DAG completed. Review the run errors and partial outputs."
+        final_state["full_report"] = final_state.get("full_report", "") or render_report(
+            final_state  # type: ignore[arg-type]
+        )
+    return final_state  # type: ignore[return-value]
+
+
+def _string_list(value: object) -> list[str]:
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    return []

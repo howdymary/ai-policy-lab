@@ -5,6 +5,7 @@ from typing import Any, Protocol
 from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
 from ai_policy_lab.connectors import FederalRegisterConnector
 from ai_policy_lab.runtime import ResearchRuntime
+from ai_policy_lab.sanitize import wrap_user_content
 from ai_policy_lab.state import ResearchState, SourceRecord
 
 SYSTEM_PROMPT = """You are a policy analyst focused on legislation, regulation, institutional initiatives,
@@ -37,10 +38,10 @@ class PolicyScannerAgent(BaseResearchAgent):
                     agent_name=self.name,
                     system_prompt=self.system_prompt,
                     user_prompt=(
-                        f"Question: {state['root_question']}\n"
+                        f"{wrap_user_content('root_question', state['root_question'])}\n"
                         "Summarize the active policy landscape, key institutions, and historical precedents "
                         "using these primary-source retrieval notes:\n"
-                        f"{summary}"
+                        f"{wrap_user_content('retrieval_notes', summary)}"
                     ),
                     fallback=summary,
                 ),
@@ -49,7 +50,7 @@ class PolicyScannerAgent(BaseResearchAgent):
             }
 
         prompt = (
-            f"Question: {state['root_question']}\n"
+            f"{wrap_user_content('root_question', state['root_question'])}\n"
             "Summarize the active policy landscape, key institutions, and historical precedents."
         )
         fallback = (

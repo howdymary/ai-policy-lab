@@ -348,7 +348,7 @@ def discover_great_reallocation_data(
     census: CensusLike | None = None,
     fred: FREDLike | None = None,
 ) -> DataDiscoveryResult:
-    datasets = default_dataset_catalog()
+    datasets = default_dataset_catalog(domain="labor_market")
     sources = _official_data_sources()
     issues: list[str] = []
     notes: list[str] = []
@@ -1288,7 +1288,7 @@ def _dedupe_datasets(datasets: list[DatasetRecord]) -> list[DatasetRecord]:
 
 
 def _safe_int(value: str | None) -> int:
-    if value in (None, "", "null"):
+    if value is None or value in {"", "null"}:
         return 0
     return int(value)
 

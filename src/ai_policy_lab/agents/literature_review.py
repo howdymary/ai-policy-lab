@@ -8,6 +8,7 @@ from ai_policy_lab.research_tracks import (
     is_upskilling_pathways_question,
 )
 from ai_policy_lab.runtime import ResearchRuntime
+from ai_policy_lab.sanitize import wrap_user_content, wrap_user_list
 from ai_policy_lab.state import ResearchState
 
 SYSTEM_PROMPT = """You are a graduate research assistant conducting a systematic literature review.
@@ -29,13 +30,16 @@ class LiteratureReviewAgent(BaseResearchAgent):
                 agent_name=self.name,
                 system_prompt=self.system_prompt,
                 user_prompt=(
-                    f"Root question: {state['root_question']}\n"
-                    f"Sub-questions: {[item['question'] for item in state['research_questions']]}\n"
+                    f"{wrap_user_content('root_question', state['root_question'])}\n"
+                    f"{wrap_user_list('sub_questions', [item['question'] for item in state['research_questions']], item_tag='question')}\n"
                     "Using the source inventory below, produce a literature review organized by "
                     "established consensus, active debates, and knowledge gaps:\n"
-                    + "\n".join(
+                    + wrap_user_content(
+                        "source_inventory",
+                        "\n".join(
                         f"- {source['title']} ({source['publication']}, {source['date'][:4]}, {source['source_tier']})"
                         for source in result.sources
+                        ),
                     )
                 ),
                 fallback=result.summary,
@@ -55,13 +59,16 @@ class LiteratureReviewAgent(BaseResearchAgent):
                 agent_name=self.name,
                 system_prompt=self.system_prompt,
                 user_prompt=(
-                    f"Root question: {state['root_question']}\n"
-                    f"Sub-questions: {[item['question'] for item in state['research_questions']]}\n"
+                    f"{wrap_user_content('root_question', state['root_question'])}\n"
+                    f"{wrap_user_list('sub_questions', [item['question'] for item in state['research_questions']], item_tag='question')}\n"
                     "Using the source inventory below, produce a literature review organized by "
                     "established consensus, active debates, and knowledge gaps:\n"
-                    + "\n".join(
+                    + wrap_user_content(
+                        "source_inventory",
+                        "\n".join(
                         f"- {source['title']} ({source['publication']}, {source['date'][:4]}, {source['source_tier']})"
                         for source in result.sources
+                        ),
                     )
                 ),
                 fallback=result.summary,
@@ -73,9 +80,9 @@ class LiteratureReviewAgent(BaseResearchAgent):
             }
 
         prompt = (
-            f"Root question: {state['root_question']}\n"
-            f"Sub-questions: {[item['question'] for item in state['research_questions']]}\n"
-            f"Quality floor: {state['quality_floor']}\n"
+            f"{wrap_user_content('root_question', state['root_question'])}\n"
+            f"{wrap_user_list('sub_questions', [item['question'] for item in state['research_questions']], item_tag='question')}\n"
+            f"<quality_floor>{state['quality_floor']}</quality_floor>\n"
             "Produce a literature review summary organized by sub-question."
         )
         fallback = (

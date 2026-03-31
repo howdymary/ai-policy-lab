@@ -7,6 +7,8 @@ from ai_policy_lab.connectors.base import BaseConnector
 
 class FederalRegisterConnector(BaseConnector):
     base_url = "https://www.federalregister.gov/api/v1/documents.json"
+    rate_limit_max_calls = 100
+    rate_limit_period_seconds = 60.0
 
     def search_documents(
         self,

@@ -7,6 +7,9 @@ from ai_policy_lab.connectors.base import BaseConnector
 
 
 class ScholarSearchConnector(BaseConnector):
+    rate_limit_max_calls = 90
+    rate_limit_period_seconds = 300.0
+
     def search(self, *, query: str, limit: int = 10) -> dict[str, Any]:
         url = "https://api.semanticscholar.org/graph/v1/paper/search"
         params: dict[str, Any] = {

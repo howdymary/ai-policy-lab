@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
-from ai_policy_lab.catalog import default_dataset_catalog
+from ai_policy_lab.catalog import default_dataset_catalog, infer_dataset_domain
 from ai_policy_lab.research_tracks import (
     discover_great_reallocation_data,
     discover_upskilling_pathways_data,
@@ -9,6 +9,7 @@ from ai_policy_lab.research_tracks import (
     is_upskilling_pathways_question,
 )
 from ai_policy_lab.runtime import ResearchRuntime
+from ai_policy_lab.sanitize import wrap_user_content, wrap_user_list
 from ai_policy_lab.state import ResearchState
 
 SYSTEM_PROMPT = """You are a data librarian and research data specialist.
@@ -30,10 +31,10 @@ class DataScoutAgent(BaseResearchAgent):
                 agent_name=self.name,
                 system_prompt=self.system_prompt,
                 user_prompt=(
-                    f"Root question: {state['root_question']}\n"
-                    f"Sub-questions: {[item['question'] for item in state['research_questions']]}\n"
+                    f"{wrap_user_content('root_question', state['root_question'])}\n"
+                    f"{wrap_user_list('sub_questions', [item['question'] for item in state['research_questions']], item_tag='question')}\n"
                     "Turn the following retrieval notes into a data availability matrix and data gap analysis:\n"
-                    f"{result.summary}"
+                    f"{wrap_user_content('retrieval_notes', result.summary)}"
                 ),
                 fallback=result.summary,
             )
@@ -53,10 +54,10 @@ class DataScoutAgent(BaseResearchAgent):
                 agent_name=self.name,
                 system_prompt=self.system_prompt,
                 user_prompt=(
-                    f"Root question: {state['root_question']}\n"
-                    f"Sub-questions: {[item['question'] for item in state['research_questions']]}\n"
+                    f"{wrap_user_content('root_question', state['root_question'])}\n"
+                    f"{wrap_user_list('sub_questions', [item['question'] for item in state['research_questions']], item_tag='question')}\n"
                     "Turn the following retrieval notes into a data availability matrix and data gap analysis:\n"
-                    f"{result.summary}"
+                    f"{wrap_user_content('retrieval_notes', result.summary)}"
                 ),
                 fallback=result.summary,
             )
@@ -67,17 +68,31 @@ class DataScoutAgent(BaseResearchAgent):
                 "flagged_issues": result.issues,
             }
 
-        datasets = default_dataset_catalog()
+        domain = infer_dataset_domain(
+            question=state["root_question"],
+            constraints=state["domain_constraints"],
+        )
+        datasets = default_dataset_catalog(domain=domain)
         prompt = (
-            f"Root question: {state['root_question']}\n"
-            f"Constraints: {state['domain_constraints']}\n"
+            f"{wrap_user_content('root_question', state['root_question'])}\n"
+            f"{wrap_user_list('constraints', state['domain_constraints'], item_tag='constraint')}\n"
             "Summarize the discovered data landscape, likely joins, and the most important missing data."
         )
-        fallback = (
-            f"Cataloged {len(datasets)} canonical labor-market datasets spanning BLS, Census, FRED, O*NET, "
-            "IPUMS, and proprietary postings sources. The biggest likely gaps are firm-level AI adoption data, "
-            "worker-level transition costs, and consistently accessible real-time postings data."
-        )
+        if datasets:
+            fallback = (
+                f"Cataloged {len(datasets)} domain-relevant datasets for the inferred '{domain}' research area. "
+                "The biggest likely gaps are restricted-use microdata, contemporaneous program evaluation inputs, "
+                "and researcher-built linkage tables that turn raw sources into analysis-ready panels."
+            )
+            issues: list[str] = []
+        else:
+            fallback = (
+                "No domain-specific datasets are preconfigured for this question yet. Use discovery connectors "
+                "and source review to identify the right empirical base before quantitative analysis."
+            )
+            issues = [
+                f"WARNING: No domain-aware dataset catalog is available yet for inferred domain '{domain}'."
+            ]
         return {
             "datasets": datasets,
             "data_availability_assessment": runtime.maybe_generate(
@@ -86,4 +101,5 @@ class DataScoutAgent(BaseResearchAgent):
                 user_prompt=prompt,
                 fallback=fallback,
             ),
+            "flagged_issues": issues,
         }

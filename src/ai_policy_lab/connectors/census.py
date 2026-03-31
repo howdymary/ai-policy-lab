@@ -6,6 +6,9 @@ from ai_policy_lab.connectors.base import BaseConnector
 
 
 class CensusConnector(BaseConnector):
+    rate_limit_max_calls = 50
+    rate_limit_period_seconds = 60.0
+
     def dataset(
         self,
         *,

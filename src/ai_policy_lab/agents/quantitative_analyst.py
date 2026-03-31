@@ -7,6 +7,7 @@ from ai_policy_lab.research_tracks import (
     is_upskilling_pathways_question,
 )
 from ai_policy_lab.runtime import ResearchRuntime
+from ai_policy_lab.sanitize import wrap_user_content, wrap_user_list
 from ai_policy_lab.state import ResearchState
 
 SYSTEM_PROMPT = """You are a quantitative researcher in applied econometrics and data science.
@@ -46,8 +47,8 @@ class QuantitativeAnalystAgent(BaseResearchAgent):
             }
 
         prompt = (
-            f"Question: {state['root_question']}\n"
-            f"Datasets available: {[dataset['name'] for dataset in state['datasets']]}\n"
+            f"{wrap_user_content('root_question', state['root_question'])}\n"
+            f"{wrap_user_list('datasets', [dataset['name'] for dataset in state['datasets']], item_tag='dataset')}\n"
             "Draft a methods plan that starts with descriptive analysis and only then considers causal designs."
         )
         execution_label = "mock mode" if runtime.settings.use_mock else "this run"

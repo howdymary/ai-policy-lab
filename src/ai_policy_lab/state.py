@@ -3,6 +3,7 @@ from __future__ import annotations
 import operator
 from typing import Annotated, Literal, TypedDict
 
+from ai_policy_lab.sanitize import sanitize_user_input, sanitize_user_inputs
 from ai_policy_lab.utils import utcnow_iso
 
 SourceTier = Literal["tier_1", "tier_2", "tier_3", "excluded"]
@@ -23,6 +24,7 @@ ResearchQuestionStatus = Literal["pending", "in_progress", "completed", "deferre
 ResearchQuestionPriority = Literal["primary", "secondary", "exploratory"]
 NormalizationStatus = Literal["raw", "cleaned", "normalized", "merged"]
 QualityFloor = Literal["tier_1", "tier_2", "tier_3"]
+RunStatus = Literal["running", "completed", "failed"]
 PhaseName = Literal[
     "phase_0_intake",
     "phase_1_discovery",
@@ -140,6 +142,8 @@ class ResearchState(TypedDict):
     messages: Annotated[list[MessageRecord], operator.add]
     current_phase: PhaseName
     agent_log: Annotated[list[AgentLogEntry], operator.add]
+    run_status: RunStatus
+    run_errors: Annotated[list[str], operator.add]
 
 
 def make_initial_state(
@@ -148,9 +152,11 @@ def make_initial_state(
     domain_constraints: list[str] | None = None,
     quality_floor: QualityFloor = "tier_2",
 ) -> ResearchState:
+    sanitized_question = sanitize_user_input(root_question)
+    sanitized_constraints = sanitize_user_inputs(domain_constraints or [])
     return {
-        "root_question": root_question,
-        "domain_constraints": domain_constraints or [],
+        "root_question": sanitized_question,
+        "domain_constraints": sanitized_constraints,
         "quality_floor": quality_floor,
         "sources": [],
         "datasets": [],
@@ -170,8 +176,10 @@ def make_initial_state(
         "datasets_manifest": [],
         "citation_list": [],
         "research_agenda": [],
-        "messages": [{"role": "user", "content": root_question}],
+        "messages": [{"role": "user", "content": sanitized_question}],
         "current_phase": "phase_0_intake",
+        "run_status": "running",
+        "run_errors": [],
         "agent_log": [
             {
                 "timestamp": utcnow_iso(),

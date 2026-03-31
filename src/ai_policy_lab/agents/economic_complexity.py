@@ -35,7 +35,6 @@ class EconomicComplexityAgent(BaseResearchAgent):
                 ],
             }
 
-        _ = (state, runtime)
         return {
             "flagged_issues": [
                 "Economic complexity metrics are not yet computed; capability mapping requires additional data engineering."

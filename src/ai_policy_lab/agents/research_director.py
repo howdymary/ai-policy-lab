@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
 from ai_policy_lab.report import render_report
@@ -11,6 +11,7 @@ from ai_policy_lab.research_tracks import (
     is_upskilling_pathways_question,
 )
 from ai_policy_lab.runtime import ResearchRuntime
+from ai_policy_lab.sanitize import sanitize_user_input
 from ai_policy_lab.state import ResearchQuestion, ResearchQuestionPriority, ResearchState
 
 INTAKE_PROMPT = """You are the Research Director of an autonomous policy research lab.
@@ -28,28 +29,23 @@ and unresolved disagreements."""
 @dataclass(slots=True)
 class ResearchDirectorAgent(BaseResearchAgent):
     stage: str
+    name: str = field(init=False, default="research_director")
+    phase: str = field(init=False)
+    system_prompt: str = field(init=False)
 
-    @property
-    def name(self) -> str:
-        return "research_director"
-
-    @property
-    def phase(self) -> str:
+    def __post_init__(self) -> None:
         phase_map = {
             "intake": "phase_0_intake",
             "midcourse": "phase_1_5_refinement",
             "synthesis": "phase_4_synthesis",
         }
-        return phase_map[self.stage]
-
-    @property
-    def system_prompt(self) -> str:
         prompt_map = {
             "intake": INTAKE_PROMPT,
             "midcourse": MIDCOURSE_PROMPT,
             "synthesis": SYNTHESIS_PROMPT,
         }
-        return prompt_map[self.stage]
+        self.phase = phase_map[self.stage]
+        self.system_prompt = prompt_map[self.stage]
 
     def run(self, state: ResearchState, runtime: ResearchRuntime) -> StatePatch:
         if self.stage == "intake":
@@ -71,7 +67,7 @@ class ResearchDirectorAgent(BaseResearchAgent):
                 "current_phase": "phase_1_discovery",
             }
 
-        root = state["root_question"]
+        root = sanitize_user_input(state["root_question"]).rstrip("?")
         questions = [
             self._question(
                 identifier="rq-1",

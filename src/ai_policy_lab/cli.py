@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import cast
@@ -11,6 +12,7 @@ from rich.panel import Panel
 
 from ai_policy_lab.graph import run_research
 from ai_policy_lab.runtime import ResearchRuntime
+from ai_policy_lab.sanitize import sanitize_user_input, sanitize_user_inputs
 from ai_policy_lab.state import QualityFloor
 from ai_policy_lab.utils import slugify
 
@@ -41,20 +43,35 @@ def run(
         "--output-dir",
         help="Directory for report and state artifacts.",
     ),
+    model: str | None = typer.Option(None, "--model", help="Override the default LLM model."),
+    verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging."),
+    quiet: bool = typer.Option(False, "--quiet", help="Reduce log output."),
 ) -> None:
     if quality_floor not in {"tier_1", "tier_2", "tier_3"}:
         raise typer.BadParameter("quality floor must be one of: tier_1, tier_2, tier_3")
+    if verbose and quiet:
+        raise typer.BadParameter("Choose either --verbose or --quiet, not both.")
+
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.WARNING if quiet else logging.INFO)
 
     runtime = ResearchRuntime.from_env()
+    if model:
+        runtime.settings.default_model = model
+
+    sanitized_question = sanitize_user_input(question)
+    sanitized_constraints = sanitize_user_inputs(constraint)
 
     state = run_research(
         runtime=runtime,
-        root_question=question,
-        domain_constraints=constraint,
+        root_question=sanitized_question,
+        domain_constraints=sanitized_constraints,
         quality_floor=cast(QualityFloor, quality_floor),
     )
 
-    target_dir = output_dir or _default_output_dir(runtime=runtime, question=question)
+    target_dir = _validate_output_dir(
+        output_dir or _default_output_dir(runtime=runtime, question=sanitized_question),
+        runs_dir=runtime.settings.runs_dir,
+    )
     target_dir.mkdir(parents=True, exist_ok=True)
 
     report_path = target_dir / "report.md"
@@ -77,3 +94,19 @@ def run(
 def _default_output_dir(*, runtime: ResearchRuntime, question: str) -> Path:
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     return runtime.settings.runs_dir / f"{timestamp}-{slugify(question)[:48]}"
+
+
+def _validate_output_dir(target_dir: Path, *, runs_dir: Path) -> Path:
+    resolved = target_dir.resolve()
+    allowed_roots = [Path.cwd().resolve(), runs_dir.resolve()]
+    if any(_is_within(resolved, root) for root in allowed_roots):
+        return resolved
+    raise typer.BadParameter(f"Output dir must be within {allowed_roots[0]} or {allowed_roots[1]}")
+
+
+def _is_within(candidate: Path, root: Path) -> bool:
+    try:
+        candidate.relative_to(root)
+        return True
+    except ValueError:
+        return False

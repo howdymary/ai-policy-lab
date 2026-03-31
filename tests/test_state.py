@@ -15,4 +15,6 @@ def test_make_initial_state_sets_expected_defaults() -> None:
     assert state["datasets"] == []
     assert state["adversarial_review"] == []
     assert state["current_phase"] == "phase_0_intake"
+    assert state["run_status"] == "running"
+    assert state["run_errors"] == []
     assert state["agent_log"]

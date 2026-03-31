@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from ai_policy_lab.config import Settings
-from ai_policy_lab.llm import LLMNotConfiguredError, OpenAICompatibleLLM
+from ai_policy_lab.llm import LLMNotConfiguredError, LLMResponseError, OpenAICompatibleLLM
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -37,5 +40,6 @@ class ResearchRuntime:
                 user_prompt=user_prompt,
                 temperature=temperature,
             )
-        except LLMNotConfiguredError:
+        except (LLMNotConfiguredError, LLMResponseError):
+            logger.warning("Falling back for agent %s after LLM generation failed.", agent_name)
             return fallback

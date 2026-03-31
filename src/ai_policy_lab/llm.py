@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -10,6 +11,10 @@ from ai_policy_lab.config import Settings
 
 class LLMNotConfiguredError(RuntimeError):
     """Raised when the runtime is asked to use a live LLM without credentials."""
+
+
+class LLMResponseError(RuntimeError):
+    """Raised when an LLM request fails or returns malformed data."""
 
 
 @dataclass(slots=True)
@@ -45,13 +50,30 @@ class OpenAICompatibleLLM:
             "Content-Type": "application/json",
         }
 
-        with httpx.Client(timeout=self.settings.http_timeout_seconds) as client:
-            response = client.post(
-                f"{self.settings.openai_base_url}/chat/completions",
-                json=payload,
-                headers=headers,
-            )
-            response.raise_for_status()
-            body = response.json()
-
-        return str(body["choices"][0]["message"]["content"]).strip()
+        try:
+            with httpx.Client(timeout=self.settings.http_timeout_seconds) as client:
+                response = client.post(
+                    f"{self.settings.openai_base_url}/chat/completions",
+                    json=payload,
+                    headers=headers,
+                )
+                response.raise_for_status()
+                body = response.json()
+            if not isinstance(body, dict):
+                raise ValueError("LLM response body was not a JSON object")
+            choices = body.get("choices")
+            if not choices or not isinstance(choices, list):
+                raise ValueError(f"LLM returned no choices: {body.get('error', 'unknown')}")
+            content = choices[0].get("message", {}).get("content")
+            if content is None:
+                raise ValueError("LLM response missing content field")
+            return str(content).strip()
+        except httpx.HTTPStatusError as exc:
+            detail = exc.response.text if exc.response is not None else str(exc)
+            raise LLMResponseError(f"LLM request failed with HTTP status error: {detail}") from exc
+        except httpx.TimeoutException as exc:
+            raise LLMResponseError("LLM request timed out.") from exc
+        except json.JSONDecodeError as exc:
+            raise LLMResponseError("LLM returned invalid JSON.") from exc
+        except (AttributeError, ValueError, KeyError) as exc:
+            raise LLMResponseError(f"LLM response validation failed: {exc}") from exc

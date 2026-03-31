@@ -3,6 +3,7 @@
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+.coverage
 .venv/
 __pycache__/
 .ipynb_checkpoints/

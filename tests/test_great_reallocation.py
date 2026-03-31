@@ -253,6 +253,7 @@ def _settings() -> Settings:
     return Settings(
         use_mock=True,
         runs_dir=Path("runs"),
+        cache_ttl_hours=24,
         default_model="qwopus-q4km",
         default_temperature=0.2,
         openai_base_url="http://localhost:11434/v1",
@@ -265,6 +266,7 @@ def _settings() -> Settings:
         onet_password=None,
         semantic_scholar_api_key=None,
         web_search_api_key=None,
+        crossref_contact_email=None,
     )
 
 

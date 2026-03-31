@@ -1,9 +1,41 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from ai_policy_lab.state import DatasetRecord
 
 
-def default_dataset_catalog() -> list[DatasetRecord]:
+def infer_dataset_domain(*, question: str = "", constraints: Sequence[str] | None = None) -> str:
+    corpus = " ".join([question, *(constraints or [])]).lower()
+    labor_keywords = {
+        "labor",
+        "workforce",
+        "occupation",
+        "employment",
+        "wage",
+        "job",
+        "upskilling",
+        "worker",
+        "metro",
+        "economic complexity",
+        "ai adoption",
+    }
+    climate_keywords = {"climate", "environment", "emissions", "pollution", "epa", "energy"}
+    crypto_keywords = {"crypto", "cryptocurrency", "bitcoin", "blockchain", "token"}
+
+    if any(keyword in corpus for keyword in labor_keywords):
+        return "labor_market"
+    if any(keyword in corpus for keyword in climate_keywords):
+        return "environment"
+    if any(keyword in corpus for keyword in crypto_keywords):
+        return "crypto"
+    return "general_policy"
+
+
+def default_dataset_catalog(*, domain: str = "labor_market") -> list[DatasetRecord]:
+    if domain != "labor_market":
+        return []
+
     return [
         {
             "id": "bls-oews",
