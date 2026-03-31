@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ai_policy_lab.state import ResearchQuestion, ResearchState
+from ai_policy_lab.state import AdversarialReviewItem, ResearchQuestion, ResearchState
 
 
 def _render_questions(questions: list[ResearchQuestion]) -> str:
@@ -32,6 +32,20 @@ def _render_datasets(state: ResearchState) -> str:
         f"- {dataset['name']} ({dataset['source_agency']}) — {dataset['url']}\n"
         for dataset in state["datasets"]
     )
+
+
+def _render_adversarial_review(items: list[AdversarialReviewItem]) -> str:
+    if not items:
+        return "- No adversarial review items were logged.\n"
+    lines = []
+    for item in items:
+        sources = ", ".join(item["supporting_sources"]) if item["supporting_sources"] else "none"
+        lines.append(
+            f"- [{item['recommendation']}] {item['finding_claim']} "
+            f"Counterargument: {item['counterargument']} "
+            f"[counter-evidence: {item['evidence_strength']}; sources: {sources}]"
+        )
+    return "\n".join(lines) + "\n"
 
 
 def render_report(state: ResearchState) -> str:
@@ -81,15 +95,19 @@ Constraints: {", ".join(state["domain_constraints"]) if state["domain_constraint
 
 {methodology_review}
 
-## 9. Research Questions
+## 9. Counterarguments and Rebuttals
+
+{_render_adversarial_review(state["adversarial_review"])}
+
+## 10. Research Questions
 
 {_render_questions(state["research_questions"])}
 
-## 10. Data Appendix
+## 11. Data Appendix
 
 {_render_datasets(state)}
 
-## 11. Source Audit
+## 12. Source Audit
 
 {source_audit}
 """

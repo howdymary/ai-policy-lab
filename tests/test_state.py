@@ -13,5 +13,6 @@ def test_make_initial_state_sets_expected_defaults() -> None:
     assert state["quality_floor"] == "tier_2"
     assert state["research_questions"] == []
     assert state["datasets"] == []
+    assert state["adversarial_review"] == []
     assert state["current_phase"] == "phase_0_intake"
     assert state["agent_log"]

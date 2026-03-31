@@ -3,6 +3,7 @@ from __future__ import annotations
 from langgraph.graph import END, START, StateGraph
 
 from ai_policy_lab.agents import (
+    AdversarialReviewerAgent,
     DataScoutAgent,
     EconomicComplexityAgent,
     LiteratureReviewAgent,
@@ -30,6 +31,7 @@ def build_graph(runtime: ResearchRuntime):
     workflow.add_node("economic_complexity", EconomicComplexityAgent().as_node(runtime))
     workflow.add_node("source_quality_auditor", SourceQualityAuditorAgent().as_node(runtime))
     workflow.add_node("methodology_reviewer", MethodologyReviewerAgent().as_node(runtime))
+    workflow.add_node("adversarial_reviewer", AdversarialReviewerAgent().as_node(runtime))
     workflow.add_node("research_director_synthesis", ResearchDirectorAgent("synthesis").as_node(runtime))
 
     workflow.add_edge(START, "research_director_intake")
@@ -50,7 +52,8 @@ def build_graph(runtime: ResearchRuntime):
     workflow.add_edge("economic_complexity", "source_quality_auditor")
 
     workflow.add_edge("source_quality_auditor", "methodology_reviewer")
-    workflow.add_edge("methodology_reviewer", "research_director_synthesis")
+    workflow.add_edge("methodology_reviewer", "adversarial_reviewer")
+    workflow.add_edge("adversarial_reviewer", "research_director_synthesis")
     workflow.add_edge("research_director_synthesis", END)
 
     return workflow.compile()

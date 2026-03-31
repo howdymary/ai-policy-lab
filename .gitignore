@@ -5,8 +5,13 @@
 .ruff_cache/
 .venv/
 __pycache__/
+.ipynb_checkpoints/
 *.py[cod]
 dist/
 build/
 htmlcov/
 runs/
+data/raw/
+data/knowledge_base.db
+outputs/reports/
+outputs/notebooks/

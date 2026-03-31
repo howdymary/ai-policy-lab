@@ -10,4 +10,5 @@ def test_render_report_includes_core_sections() -> None:
     assert "# AI Policy Research Lab Report" in report
     assert "## 1. Executive Summary" in report
     assert "## 4. Literature Review" in report
-    assert "## 10. Data Appendix" in report
+    assert "## 9. Counterarguments and Rebuttals" in report
+    assert "## 11. Data Appendix" in report

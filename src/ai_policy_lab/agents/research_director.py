@@ -126,10 +126,12 @@ class ResearchDirectorAgent(BaseResearchAgent):
         finding_count = len(state["findings"])
         source_count = len(state["sources"])
         dataset_count = len(state["datasets"])
+        adversarial_count = len(state["adversarial_review"])
         executive_summary = (
             f"This run addressed the question: {state['root_question']}.\n\n"
             f"The scaffold completed all phases of the research DAG, cataloged {dataset_count} datasets, "
-            f"captured {source_count} sources, and produced {finding_count} validated findings. "
+            f"captured {source_count} sources, produced {finding_count} validated findings, and logged "
+            f"{adversarial_count} adversarial counterarguments. "
             "If you ran in mock mode, treat this output as an orchestration proof rather than a publishable report."
         )
 

@@ -46,6 +46,28 @@ cp .env.example .env
 
 By default, the project runs in mock mode so you can exercise the DAG without API keys.
 
+## API key setup
+
+All core government data APIs used here are free:
+
+- BLS API: [data.bls.gov/registrationEngine](https://data.bls.gov/registrationEngine/)
+- FRED API: [fred.stlouisfed.org/docs/api/api_key.html](https://fred.stlouisfed.org/docs/api/api_key.html)
+- Census API: [api.census.gov/data/key_signup.html](https://api.census.gov/data/key_signup.html)
+- O*NET Web Services: [services.onetcenter.org/reference/register](https://services.onetcenter.org/reference/register)
+- Semantic Scholar API: [semanticscholar.org/product/api](https://www.semanticscholar.org/product/api)
+
+Setup:
+
+```bash
+cp .env.example .env
+```
+
+Then fill in the keys you want to use and verify the connector layer with:
+
+```bash
+poetry run pytest -q
+```
+
 ### 3. Run a mock research job
 
 ```bash

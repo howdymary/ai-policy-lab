@@ -18,6 +18,7 @@ SourceType = Literal[
     "social_media",
 ]
 EvidenceStrength = Literal["strong", "moderate", "suggestive", "weak"]
+AdversarialRecommendation = Literal["STANDS", "WEAKENED", "CHALLENGED"]
 ResearchQuestionStatus = Literal["pending", "in_progress", "completed", "deferred"]
 ResearchQuestionPriority = Literal["primary", "secondary", "exploratory"]
 NormalizationStatus = Literal["raw", "cleaned", "normalized", "merged"]
@@ -95,6 +96,16 @@ class ResearchQuestion(TypedDict):
     assigned_to: list[str]
 
 
+class AdversarialReviewItem(TypedDict):
+    """A structured counterargument emitted by the adversarial reviewer."""
+
+    finding_claim: str
+    counterargument: str
+    evidence_strength: EvidenceStrength
+    recommendation: AdversarialRecommendation
+    supporting_sources: list[str]
+
+
 class AgentLogEntry(TypedDict):
     timestamp: str
     agent: str
@@ -119,6 +130,7 @@ class ResearchState(TypedDict):
     methodology_description: str
     source_audit_report: str
     methodology_review: str
+    adversarial_review: Annotated[list[AdversarialReviewItem], operator.add]
     flagged_issues: Annotated[list[str], operator.add]
     executive_summary: str
     full_report: str
@@ -151,6 +163,7 @@ def make_initial_state(
         "methodology_description": "",
         "source_audit_report": "",
         "methodology_review": "",
+        "adversarial_review": [],
         "flagged_issues": [],
         "executive_summary": "",
         "full_report": "",

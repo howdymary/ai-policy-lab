@@ -37,6 +37,13 @@ class BaseResearchAgent(ABC):
                 break
 
         if not pieces:
+            adversarial_items = patch.get("adversarial_review")
+            if isinstance(adversarial_items, list) and adversarial_items:
+                pieces.append(
+                    f"Adversarial review completed for {len(adversarial_items)} findings."
+                )
+
+        if not pieces:
             pieces.append(f"{self.name} completed.")
 
         return compact_whitespace(pieces[0])[:240]
