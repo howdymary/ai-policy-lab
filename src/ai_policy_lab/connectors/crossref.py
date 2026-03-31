@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ai_policy_lab.connectors.base import BaseConnector
+from ai_policy_lab.connectors.base import BaseConnector, ConnectorConfigurationError
 
 
 class CrossrefConnector(BaseConnector):
@@ -23,4 +23,6 @@ class CrossrefConnector(BaseConnector):
         else:
             headers = {"User-Agent": "ai-policy-lab/0.1.0"}
         result = self._get_json(self.base_url, params=params, headers=headers)
+        if not isinstance(result, dict) or result.get("status") != "ok":
+            raise ConnectorConfigurationError("Crossref API error: unexpected response status")
         return dict(result)

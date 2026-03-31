@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ai_policy_lab.connectors.base import BaseConnector
+from ai_policy_lab.connectors.base import BaseConnector, ConnectorConfigurationError
 
 
 class CensusConnector(BaseConnector):
@@ -28,6 +28,15 @@ class CensusConnector(BaseConnector):
         if predicates:
             params.update(predicates)
         if self.settings.census_api_key:
-            params["key"] = self.settings.census_api_key
+            headers = {"X-Census-Key": self.settings.census_api_key}
+        else:
+            headers = None
 
-        return self._get_json(f"https://api.census.gov/data/{year}/{dataset}", params=params)
+        result = self._get_json(
+            f"https://api.census.gov/data/{year}/{dataset}",
+            params=params,
+            headers=headers,
+        )
+        if isinstance(result, dict) and "error" in result:
+            raise ConnectorConfigurationError(f"Census API error: {result['error']}")
+        return result

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ai_policy_lab.connectors.base import BaseConnector
+from ai_policy_lab.connectors.base import BaseConnector, ConnectorConfigurationError
 
 
 class FederalRegisterConnector(BaseConnector):
@@ -25,4 +25,6 @@ class FederalRegisterConnector(BaseConnector):
         if agency_slug:
             params["conditions[agencies][]"] = agency_slug
         result = self._get_json(self.base_url, params=params)
+        if not isinstance(result, dict) or "results" not in result:
+            raise ConnectorConfigurationError("Federal Register API error: unexpected response payload")
         return dict(result)

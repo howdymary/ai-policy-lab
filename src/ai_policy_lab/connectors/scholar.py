@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import quote_plus
 
-from ai_policy_lab.connectors.base import BaseConnector
+from ai_policy_lab.connectors.base import BaseConnector, ConnectorConfigurationError
 
 
 class ScholarSearchConnector(BaseConnector):
@@ -23,6 +23,8 @@ class ScholarSearchConnector(BaseConnector):
             else None
         )
         result = self._get_json(url, params=params, headers=headers)
+        if not isinstance(result, dict) or "error" in result or "data" not in result:
+            raise ConnectorConfigurationError("Semantic Scholar API error: unexpected response payload")
         return dict(result)
 
     def scholar_url(self, query: str) -> str:

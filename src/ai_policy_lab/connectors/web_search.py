@@ -2,20 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from ai_policy_lab.connectors.base import BaseConnector, ConnectorConfigurationError
+from ai_policy_lab.connectors.base import BaseConnector
 
 
 class WebSearchConnector(BaseConnector):
     def search(self, *, query: str, limit: int = 10) -> dict[str, Any]:
-        if not self.settings.web_search_api_key:
-            raise ConnectorConfigurationError(
-                "WEB_SEARCH_API_KEY is required for live web search integration."
-            )
-
-        # Placeholder contract for future provider wiring.
-        return {
-            "query": query,
-            "limit": limit,
-            "status": "not_implemented",
-            "message": "Wire your preferred web search provider here.",
-        }
+        raise NotImplementedError(
+            "WebSearchConnector is a placeholder. Wire a provider (SerpAPI, Bing Search, Google Custom Search) to enable live web search."
+        )

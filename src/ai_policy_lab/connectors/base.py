@@ -16,6 +16,7 @@ from ai_policy_lab.config import Settings
 
 logger = logging.getLogger(__name__)
 _RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+_AUTH_PARAM_NAMES = {"key", "api_key", "registrationkey", "auth"}
 
 
 class ConnectorConfigurationError(RuntimeError):
@@ -158,7 +159,7 @@ class BaseConnector:
                         auth=auth,
                     )
                 if response.status_code in _RETRYABLE_STATUS_CODES and attempt < 2:
-                    delay = float(2**attempt)
+                    delay = self._retry_delay(response.headers.get("Retry-After"), attempt)
                     logger.warning(
                         "Retryable response from %s %s (status=%s). Sleeping %.1fs before retry.",
                         method,
@@ -181,7 +182,8 @@ class BaseConnector:
             except httpx.HTTPStatusError as exc:
                 status_code = exc.response.status_code if exc.response is not None else None
                 if status_code in _RETRYABLE_STATUS_CODES and attempt < 2:
-                    delay = float(2**attempt)
+                    retry_after = exc.response.headers.get("Retry-After") if exc.response is not None else None
+                    delay = self._retry_delay(retry_after, attempt)
                     logger.warning(
                         "Retryable HTTP status from %s %s (status=%s). Sleeping %.1fs before retry.",
                         method,
@@ -202,14 +204,29 @@ class BaseConnector:
         params: dict[str, Any] | None,
         json_body: dict[str, Any] | None,
     ) -> str:
+        clean_params = self._strip_auth_fields(params)
+        clean_json_body = self._strip_auth_fields(json_body)
         payload = {
             "connector": self.__class__.__name__,
             "method": method,
             "url": url,
-            "params": params or {},
-            "json_body": json_body or {},
+            "params": clean_params,
+            "json_body": clean_json_body,
         }
         return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+
+    def _strip_auth_fields(self, payload: dict[str, Any] | None) -> dict[str, Any]:
+        if not payload:
+            return {}
+        return {key: value for key, value in payload.items() if key.lower() not in _AUTH_PARAM_NAMES}
+
+    def _retry_delay(self, retry_after: str | None, attempt: int) -> float:
+        if retry_after:
+            try:
+                return max(float(retry_after), 0.5)
+            except ValueError:
+                pass
+        return float(2**attempt)
 
     def _read_cache(self, cache_key: str) -> str | None:
         if not self.cache_enabled:

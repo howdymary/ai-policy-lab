@@ -22,6 +22,7 @@ class FREDConnector(BaseConnector):
 
         params: dict[str, Any] = {
             "series_id": series_id,
+            # FRED requires the API key in the query string for this endpoint.
             "api_key": self.settings.fred_api_key,
             "file_type": "json",
         }
@@ -31,4 +32,6 @@ class FREDConnector(BaseConnector):
             params["observation_end"] = observation_end
 
         result = self._get_json(self.base_url, params=params)
+        if not isinstance(result, dict) or "error_code" in result:
+            raise ConnectorConfigurationError(f"FRED API error: {result.get('error_message', 'unknown') if isinstance(result, dict) else 'unknown'}")
         return dict(cast(dict[str, Any], result))
