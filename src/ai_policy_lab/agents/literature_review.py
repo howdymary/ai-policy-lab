@@ -3,7 +3,9 @@ from __future__ import annotations
 from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
 from ai_policy_lab.research_tracks import (
     discover_great_reallocation_literature,
+    discover_upskilling_pathways_literature,
     is_great_reallocation_question,
+    is_upskilling_pathways_question,
 )
 from ai_policy_lab.runtime import ResearchRuntime
 from ai_policy_lab.state import ResearchState
@@ -18,6 +20,32 @@ class LiteratureReviewAgent(BaseResearchAgent):
     system_prompt = SYSTEM_PROMPT
 
     def run(self, state: ResearchState, runtime: ResearchRuntime) -> StatePatch:
+        if is_upskilling_pathways_question(state["root_question"]):
+            result = discover_upskilling_pathways_literature(
+                settings=runtime.settings,
+                use_live_lookup=not runtime.settings.use_mock,
+            )
+            summary = runtime.maybe_generate(
+                agent_name=self.name,
+                system_prompt=self.system_prompt,
+                user_prompt=(
+                    f"Root question: {state['root_question']}\n"
+                    f"Sub-questions: {[item['question'] for item in state['research_questions']]}\n"
+                    "Using the source inventory below, produce a literature review organized by "
+                    "established consensus, active debates, and knowledge gaps:\n"
+                    + "\n".join(
+                        f"- {source['title']} ({source['publication']}, {source['date'][:4]}, {source['source_tier']})"
+                        for source in result.sources
+                    )
+                ),
+                fallback=result.summary,
+            )
+            return {
+                "sources": result.sources,
+                "existing_literature_summary": summary,
+                "flagged_issues": result.issues,
+            }
+
         if is_great_reallocation_question(state["root_question"]):
             result = discover_great_reallocation_literature(
                 settings=runtime.settings,

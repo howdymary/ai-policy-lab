@@ -6,7 +6,9 @@ from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
 from ai_policy_lab.report import render_report
 from ai_policy_lab.research_tracks import (
     get_great_reallocation_subquestions,
+    get_upskilling_pathways_subquestions,
     is_great_reallocation_question,
+    is_upskilling_pathways_question,
 )
 from ai_policy_lab.runtime import ResearchRuntime
 from ai_policy_lab.state import ResearchQuestion, ResearchQuestionPriority, ResearchState
@@ -57,6 +59,12 @@ class ResearchDirectorAgent(BaseResearchAgent):
         return self._run_synthesis(state)
 
     def _run_intake(self, state: ResearchState) -> StatePatch:
+        if is_upskilling_pathways_question(state["root_question"]):
+            return {
+                "research_questions": get_upskilling_pathways_subquestions(),
+                "current_phase": "phase_1_discovery",
+            }
+
         if is_great_reallocation_question(state["root_question"]):
             return {
                 "research_questions": get_great_reallocation_subquestions(),

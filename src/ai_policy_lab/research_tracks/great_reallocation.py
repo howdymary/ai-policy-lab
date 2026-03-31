@@ -89,6 +89,9 @@ class MetroExposureAnalysisResult:
 _FLAGSHIP_QUESTION = (
     "how is ai adoption reshaping the occupational structure of the u.s. labor market"
 )
+_UPSKILLING_PATHWAYS_QUESTION = (
+    "how is ai adoption disrupting established upskilling pathways in the u.s. labor market"
+)
 _METRO_GEOID_FIELD = "metropolitan statistical area/micropolitan statistical area"
 _ACS_BROAD_OCCUPATION_VARIABLES = {
     "management_business_science_arts": ("C24010_003E", "C24010_039E"),
@@ -180,6 +183,21 @@ def is_great_reallocation_question(root_question: str) -> bool:
     return _FLAGSHIP_QUESTION in normalized or sum(term in normalized for term in keywords) >= 3
 
 
+def is_upskilling_pathways_question(root_question: str) -> bool:
+    normalized = root_question.lower()
+    keywords = [
+        "upskilling",
+        "pathways",
+        "stepping-stone",
+        "mobility",
+        "workforce of the future",
+        "emerging pathways",
+    ]
+    return _UPSKILLING_PATHWAYS_QUESTION in normalized or (
+        "ai" in normalized and sum(term in normalized for term in keywords) >= 2
+    )
+
+
 def get_great_reallocation_subquestions() -> list[ResearchQuestion]:
     return [
         {
@@ -247,6 +265,77 @@ def get_great_reallocation_subquestions() -> list[ResearchQuestion]:
             "status": "pending",
             "priority": "exploratory",
             "assigned_to": ["data_scout", "political_economy"],
+        },
+    ]
+
+
+def get_upskilling_pathways_subquestions() -> list[ResearchQuestion]:
+    return [
+        {
+            "id": "rq-1",
+            "question": (
+                "Which of Brookings' occupational clusters and mobility pathways appear most exposed "
+                "to AI-driven task disruption, and where are the likely bridge occupations?"
+            ),
+            "parent_question": None,
+            "status": "pending",
+            "priority": "primary",
+            "assigned_to": ["literature_review", "quantitative_analyst"],
+        },
+        {
+            "id": "rq-2",
+            "question": (
+                "Are AI-exposed stepping-stone occupations eroding faster than recent public baselines "
+                "and projections would suggest?"
+            ),
+            "parent_question": None,
+            "status": "pending",
+            "priority": "primary",
+            "assigned_to": ["quantitative_analyst", "economic_complexity"],
+        },
+        {
+            "id": "rq-3",
+            "question": (
+                "What emerging AI-adjacent occupations look like plausible new stepping-stones, and "
+                "what data gaps prevent a definitive assessment today?"
+            ),
+            "parent_question": None,
+            "status": "pending",
+            "priority": "primary",
+            "assigned_to": ["data_scout", "political_economy"],
+        },
+        {
+            "id": "rq-4",
+            "question": (
+                "Which metropolitan areas appear best positioned to absorb pathway disruption and "
+                "support new upskilling routes?"
+            ),
+            "parent_question": None,
+            "status": "pending",
+            "priority": "primary",
+            "assigned_to": ["economic_complexity", "data_scout"],
+        },
+        {
+            "id": "rq-5",
+            "question": (
+                "How might AI-era pathway disruption differ across race, gender, education, and age, "
+                "given existing labor-market disparities?"
+            ),
+            "parent_question": None,
+            "status": "pending",
+            "priority": "secondary",
+            "assigned_to": ["quantitative_analyst", "political_economy"],
+        },
+        {
+            "id": "rq-6",
+            "question": (
+                "Which workforce and upskilling policies have credible evidence for technology-driven "
+                "transitions, and how should they be adapted for AI-era mobility shocks?"
+            ),
+            "parent_question": None,
+            "status": "pending",
+            "priority": "secondary",
+            "assigned_to": ["policy_scanner", "political_economy", "literature_review"],
         },
     ]
 
@@ -410,6 +499,45 @@ def discover_great_reallocation_data(
     )
 
 
+def discover_upskilling_pathways_data(
+    *,
+    settings: Settings,
+    use_live_lookup: bool,
+    bls: BLSLike | None = None,
+    census: CensusLike | None = None,
+    fred: FREDLike | None = None,
+) -> DataDiscoveryResult:
+    base_result = discover_great_reallocation_data(
+        settings=settings,
+        use_live_lookup=use_live_lookup,
+        bls=bls,
+        census=census,
+        fred=fred,
+    )
+    datasets = _dedupe_datasets(base_result.datasets + _upskilling_pathways_dataset_records())
+    sources = _dedupe_sources(base_result.sources + _upskilling_pathways_official_sources())
+    issues = list(base_result.issues)
+    issues.extend(
+        [
+            "WARNING: The current build catalogs BLS Employment Projections, CPS/IPUMS, LEHD/QWI, and IPEDS for this prompt, but it does not yet fetch or normalize all of them live.",
+            "WARNING: Brookings' 15-cluster mobility graph and stepping-stone occupation list are not yet programmatically ingested, so pathway-specific estimation is still incomplete.",
+        ]
+    )
+    summary = (
+        f"{base_result.summary}\n"
+        "- Upskilling-pathways seed inventory adds BLS Employment Projections, CPS Job Tenure/IPUMS, "
+        "LEHD/QWI, and IPEDS as core follow-on datasets for mobility, transition, and training-capacity analysis.\n"
+        "- The strongest currently wired public-data path still runs through O*NET, ACS, CBP, and BLS labor-market "
+        "series; Brookings cluster replication and pathway transition measurement require additional ingestion work."
+    )
+    return DataDiscoveryResult(
+        datasets=datasets,
+        sources=sources,
+        summary=summary,
+        issues=issues,
+    )
+
+
 def discover_great_reallocation_literature(
     *,
     settings: Settings,
@@ -427,6 +555,26 @@ def discover_great_reallocation_literature(
 
     sources = _dedupe_sources(sources)
     summary = _compose_literature_summary(sources)
+    return LiteratureDiscoveryResult(sources=sources, summary=summary, issues=issues)
+
+
+def discover_upskilling_pathways_literature(
+    *,
+    settings: Settings,
+    use_live_lookup: bool,
+    crossref: CrossrefLike | None = None,
+) -> LiteratureDiscoveryResult:
+    sources = _great_reallocation_anchor_sources() + _upskilling_pathways_anchor_sources()
+    issues: list[str] = []
+
+    if use_live_lookup:
+        crossref_client = crossref or CrossrefConnector(settings)
+        sources = _enrich_sources_with_crossref(sources, crossref_client, issues)
+    else:
+        issues.append("INFO: Literature metadata enrichment is disabled in mock mode.")
+
+    sources = _dedupe_sources(sources)
+    summary = _compose_upskilling_pathways_literature_summary(sources)
     return LiteratureDiscoveryResult(sources=sources, summary=summary, issues=issues)
 
 
@@ -795,6 +943,55 @@ def _official_data_sources() -> list[SourceRecord]:
     ]
 
 
+def _upskilling_pathways_official_sources() -> list[SourceRecord]:
+    return [
+        _source(
+            identifier="src-bls-employment-projections",
+            title="Employment Projections",
+            authors=["Bureau of Labor Statistics"],
+            publication="Bureau of Labor Statistics",
+            date="2026-03-30",
+            url="https://www.bls.gov/emp/",
+            source_tier="tier_1",
+            source_type="government_data",
+            notes="Official BLS occupation growth and decline projections program.",
+        ),
+        _source(
+            identifier="src-cps-job-tenure",
+            title="Current Population Survey",
+            authors=["Bureau of Labor Statistics", "U.S. Census Bureau"],
+            publication="Bureau of Labor Statistics",
+            date="2026-03-30",
+            url="https://www.bls.gov/cps/",
+            source_tier="tier_1",
+            source_type="government_data",
+            notes="Official household survey program used for labor-force, tenure, and demographic analysis.",
+        ),
+        _source(
+            identifier="src-lehd-qwi",
+            title="Quarterly Workforce Indicators",
+            authors=["U.S. Census Bureau"],
+            publication="U.S. Census Bureau",
+            date="2026-03-30",
+            url="https://lehd.ces.census.gov/data/",
+            source_tier="tier_1",
+            source_type="government_data",
+            notes="Official job-flow and earnings program for place-based workforce dynamics.",
+        ),
+        _source(
+            identifier="src-ipeds",
+            title="Integrated Postsecondary Education Data System",
+            authors=["National Center for Education Statistics"],
+            publication="NCES",
+            date="2026-03-30",
+            url="https://nces.ed.gov/ipeds/",
+            source_tier="tier_1",
+            source_type="government_data",
+            notes="Official postsecondary education dataset for training capacity and credential infrastructure.",
+        ),
+    ]
+
+
 def _great_reallocation_anchor_sources() -> list[SourceRecord]:
     return [
         _source(
@@ -910,6 +1107,77 @@ def _great_reallocation_anchor_sources() -> list[SourceRecord]:
     ]
 
 
+def _upskilling_pathways_anchor_sources() -> list[SourceRecord]:
+    return [
+        _source(
+            identifier="src-brookings-moving-up-2021",
+            title="Moving up: Promoting workers’ upward mobility using network analysis",
+            authors=["Marcela Escobari", "Ian Seyal", "Carlos Daboin Contreras"],
+            publication="Brookings Institution",
+            date="2021-06-14",
+            url="https://www.brookings.edu/articles/moving-up-promoting-workers-upward-mobility-in-a-time-of-change/",
+            source_tier="tier_2",
+            source_type="think_tank",
+            notes="Core Workforce of the Future mobility report defining clusters, stepping-stones, and skyways.",
+        ),
+        _source(
+            identifier="src-brookings-growing-cities-2019",
+            title="Growing Cities That Work for All",
+            authors=["Marcela Escobari", "Jose Morales-Arilla", "Ian Seyal"],
+            publication="Brookings Institution",
+            date="2019-05-01",
+            url="https://www.brookings.edu/articles/growing-cities-that-work-for-all/",
+            source_tier="tier_2",
+            source_type="think_tank",
+            notes="Brookings industry-space and economic-complexity framing for metro labor market adaptation.",
+        ),
+        _source(
+            identifier="src-brookings-robotization-2026",
+            title="Robotization and Occupational Mobility",
+            authors=["Brookings Institution"],
+            publication="Brookings Institution",
+            date="2026-01-01",
+            url="https://www.brookings.edu/articles/robotization-and-occupational-mobility/",
+            source_tier="tier_2",
+            source_type="think_tank",
+            notes="Year-only citation from the research intake; exact publication date should be verified before publication.",
+        ),
+        _source(
+            identifier="src-aei-workforce-futures",
+            title="Workforce Futures Initiative",
+            authors=["American Enterprise Institute", "Brookings Institution", "Harvard Kennedy School"],
+            publication="AEI",
+            date="2025-01-01",
+            url="https://www.aei.org/workforce-futures-initiative/",
+            source_tier="tier_2",
+            source_type="think_tank",
+            notes="Collaborative evidence-review program on workforce development and training policy.",
+        ),
+        _source(
+            identifier="src-aspen-upskill-america-2025",
+            title="UpSkill America",
+            authors=["Aspen Institute"],
+            publication="Aspen Institute",
+            date="2025-01-01",
+            url="https://www.aspeninstitute.org/programs/upskill-america/",
+            source_tier="tier_2",
+            source_type="think_tank",
+            notes="Practitioner-oriented evidence and program design resource for employer-led upskilling.",
+        ),
+        _source(
+            identifier="src-eloundou-gpts-are-gpts",
+            title="GPTs are GPTs: An Early Look at the Labor Market Impact Potential of Large Language Models",
+            authors=["Tyna Eloundou", "Sam Manning", "Pamela Mishkin", "Daniel Rock"],
+            publication="OpenAI / University of Pennsylvania working paper",
+            date="2023-01-01",
+            url="https://arxiv.org/abs/2303.10130",
+            source_tier="tier_3",
+            source_type="preprint",
+            notes="Industry-affiliated exposure benchmark; use with a conflict-of-interest note and without treating it as peer reviewed.",
+        ),
+    ]
+
+
 def _enrich_sources_with_crossref(
     sources: list[SourceRecord],
     crossref: CrossrefLike,
@@ -990,6 +1258,21 @@ def _compose_literature_summary(sources: list[SourceRecord]) -> str:
     )
 
 
+def _compose_upskilling_pathways_literature_summary(sources: list[SourceRecord]) -> str:
+    tier_1 = sum(1 for item in sources if item["source_tier"] == "tier_1")
+    tier_2 = sum(1 for item in sources if item["source_tier"] == "tier_2")
+    tier_3 = sum(1 for item in sources if item["source_tier"] == "tier_3")
+    return (
+        "Structured literature review for AI-era upskilling pathways as a continuation of Brookings' Workforce of the Future research:\n"
+        f"- Source inventory assembled with {tier_1} Tier 1, {tier_2} Tier 2, and {tier_3} Tier 3 sources.\n"
+        "- Brookings continuation baseline: Moving Up and Growing Cities establish clustered mobility, stepping-stone occupations, skyways, and place-based capability analysis as the pre-AI benchmark.\n"
+        "- Established consensus: upward mobility depends on occupational adjacency, bridge roles, and local industry structure rather than on generic reskilling alone.\n"
+        "- Active debate: AI may complement some bridge occupations while accelerating erosion in others, and the measurement of AI exposure still differs materially across task, patent-text, and LLM-oriented frameworks.\n"
+        "- Evidence signal from newer Brookings work: recent robotization research suggests automation can lower career value by weakening upward transitions, making pathway disruption a credible continuation question for the AI era.\n"
+        "- Knowledge gaps: this run still lacks a programmatic Brookings-cluster crosswalk, direct AI-adoption measures by employer, and public worker-level pathway data that cleanly distinguish AI literacy from broader resilient-skill demand."
+    )
+
+
 def _dedupe_sources(sources: list[SourceRecord]) -> list[SourceRecord]:
     deduped: dict[str, SourceRecord] = {}
     for source in sources:
@@ -997,10 +1280,78 @@ def _dedupe_sources(sources: list[SourceRecord]) -> list[SourceRecord]:
     return list(deduped.values())
 
 
+def _dedupe_datasets(datasets: list[DatasetRecord]) -> list[DatasetRecord]:
+    deduped: dict[str, DatasetRecord] = {}
+    for dataset in datasets:
+        deduped[dataset["id"]] = dataset
+    return list(deduped.values())
+
+
 def _safe_int(value: str | None) -> int:
     if value in (None, "", "null"):
         return 0
     return int(value)
+
+
+def _upskilling_pathways_dataset_records() -> list[DatasetRecord]:
+    return [
+        {
+            "id": "bls-employment-projections",
+            "name": "BLS Employment Projections",
+            "source_agency": "BLS",
+            "url": "https://www.bls.gov/emp/",
+            "format": "download",
+            "temporal_coverage": "Biennial releases with 10-year projections",
+            "geographic_coverage": "US national occupation-level",
+            "key_variables": ["projected_employment", "growth_rate", "openings"],
+            "update_frequency": "biennial",
+            "access_method": "public_download",
+            "quality_notes": "Required to compare pre-AI baseline projections against realized occupation change.",
+            "normalization_status": "raw",
+        },
+        {
+            "id": "cps-job-tenure",
+            "name": "Current Population Survey / Job Tenure Supplement",
+            "source_agency": "BLS/Census",
+            "url": "https://www.bls.gov/cps/",
+            "format": "csv",
+            "temporal_coverage": "Recurring supplement; harmonized extracts available historically",
+            "geographic_coverage": "US household microdata",
+            "key_variables": ["tenure", "occupation", "demographics", "employment_status"],
+            "update_frequency": "periodic",
+            "access_method": "public_download",
+            "quality_notes": "Useful for worker mobility, tenure, and demographic pathway analysis.",
+            "normalization_status": "raw",
+        },
+        {
+            "id": "census-lehd-qwi",
+            "name": "LEHD / Quarterly Workforce Indicators",
+            "source_agency": "Census",
+            "url": "https://lehd.ces.census.gov/data/",
+            "format": "csv",
+            "temporal_coverage": "Quarterly, multi-year",
+            "geographic_coverage": "US state, county, and selected metro workforce data",
+            "key_variables": ["hires", "separations", "earnings", "industry", "age", "sex"],
+            "update_frequency": "quarterly",
+            "access_method": "public_download",
+            "quality_notes": "Best public flow dataset for labor market churn and place-based worker outcomes.",
+            "normalization_status": "raw",
+        },
+        {
+            "id": "nces-ipeds",
+            "name": "Integrated Postsecondary Education Data System",
+            "source_agency": "NCES",
+            "url": "https://nces.ed.gov/ipeds/",
+            "format": "download",
+            "temporal_coverage": "Annual",
+            "geographic_coverage": "US institution-level",
+            "key_variables": ["awards", "enrollment", "institution_type", "program_completions"],
+            "update_frequency": "annual",
+            "access_method": "public_download",
+            "quality_notes": "Useful for mapping community college and training capacity against pathway disruption.",
+            "normalization_status": "raw",
+        },
+    ]
 
 
 def _compute_onet_broad_category_scores(

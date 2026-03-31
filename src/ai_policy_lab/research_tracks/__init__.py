@@ -5,8 +5,12 @@ from ai_policy_lab.research_tracks.great_reallocation import (
     analyze_great_reallocation_exposure,
     discover_great_reallocation_data,
     discover_great_reallocation_literature,
+    discover_upskilling_pathways_data,
+    discover_upskilling_pathways_literature,
     get_great_reallocation_subquestions,
+    get_upskilling_pathways_subquestions,
     is_great_reallocation_question,
+    is_upskilling_pathways_question,
 )
 
 __all__ = [
@@ -16,6 +20,10 @@ __all__ = [
     "analyze_great_reallocation_exposure",
     "discover_great_reallocation_data",
     "discover_great_reallocation_literature",
+    "discover_upskilling_pathways_data",
+    "discover_upskilling_pathways_literature",
     "get_great_reallocation_subquestions",
+    "get_upskilling_pathways_subquestions",
     "is_great_reallocation_question",
+    "is_upskilling_pathways_question",
 ]

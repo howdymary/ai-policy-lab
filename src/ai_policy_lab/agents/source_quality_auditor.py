@@ -21,7 +21,7 @@ class SourceQualityAuditorAgent(BaseResearchAgent):
         report = (
             f"Source audit completed on {source_count} captured sources, including "
             f"{tier_1_count} Tier 1 and {tier_2_count} Tier 2 records. "
-            "The bibliography is now populated for the Great Reallocation path, but policy-source ingestion "
+            "The bibliography is now populated for the flagship live research paths, but policy-source ingestion "
             "and source-to-claim validation still need to be completed before publication."
         )
         if source_count == 0:

@@ -5,8 +5,12 @@ from ai_policy_lab.research_tracks import (
     analyze_great_reallocation_exposure,
     discover_great_reallocation_data,
     discover_great_reallocation_literature,
+    discover_upskilling_pathways_data,
+    discover_upskilling_pathways_literature,
     get_great_reallocation_subquestions,
+    get_upskilling_pathways_subquestions,
     is_great_reallocation_question,
+    is_upskilling_pathways_question,
 )
 
 
@@ -273,6 +277,15 @@ def test_flagship_question_detection_and_subquestions() -> None:
     assert subquestions[0]["priority"] == "primary"
 
 
+def test_upskilling_prompt_detection_and_subquestions() -> None:
+    assert is_upskilling_pathways_question(
+        "How is AI adoption disrupting established upskilling pathways in the U.S. labor market, and what new pathways are emerging to replace them?"
+    )
+    subquestions = get_upskilling_pathways_subquestions()
+    assert len(subquestions) == 6
+    assert any("stepping-stone" in item["question"] for item in subquestions)
+
+
 def test_live_data_discovery_can_use_fake_connectors() -> None:
     result = discover_great_reallocation_data(
         settings=_settings(),
@@ -299,6 +312,37 @@ def test_literature_discovery_enriches_anchor_sources() -> None:
     assert result.sources
     assert "Structured literature review" in result.summary
     assert any(source["url"].startswith("https://doi.org/10.1234/example") for source in result.sources)
+
+
+def test_upskilling_data_discovery_adds_pathway_seed_datasets() -> None:
+    result = discover_upskilling_pathways_data(
+        settings=_settings(),
+        use_live_lookup=True,
+        bls=FakeBLSConnector(),
+        census=FakeCensusConnector(),
+        fred=None,
+    )
+
+    dataset_ids = {dataset["id"] for dataset in result.datasets}
+    assert "bls-employment-projections" in dataset_ids
+    assert "cps-job-tenure" in dataset_ids
+    assert "census-lehd-qwi" in dataset_ids
+    assert "nces-ipeds" in dataset_ids
+    assert any("Brookings" in issue or "stepping-stone" in issue for issue in result.issues)
+
+
+def test_upskilling_literature_discovery_adds_brookings_continuation_sources() -> None:
+    result = discover_upskilling_pathways_literature(
+        settings=_settings(),
+        use_live_lookup=True,
+        crossref=FakeCrossrefConnector(),
+    )
+
+    source_ids = {source["id"] for source in result.sources}
+    assert "src-brookings-moving-up-2021" in source_ids
+    assert "src-brookings-robotization-2026" in source_ids
+    assert "src-eloundou-gpts-are-gpts" in source_ids
+    assert "Workforce of the Future" in result.summary or "Brookings" in result.summary
 
 
 def test_metro_exposure_analysis_uses_onet_acs_and_cbp() -> None:

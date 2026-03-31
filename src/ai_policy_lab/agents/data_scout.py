@@ -4,7 +4,9 @@ from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
 from ai_policy_lab.catalog import default_dataset_catalog
 from ai_policy_lab.research_tracks import (
     discover_great_reallocation_data,
+    discover_upskilling_pathways_data,
     is_great_reallocation_question,
+    is_upskilling_pathways_question,
 )
 from ai_policy_lab.runtime import ResearchRuntime
 from ai_policy_lab.state import ResearchState
@@ -19,6 +21,29 @@ class DataScoutAgent(BaseResearchAgent):
     system_prompt = SYSTEM_PROMPT
 
     def run(self, state: ResearchState, runtime: ResearchRuntime) -> StatePatch:
+        if is_upskilling_pathways_question(state["root_question"]):
+            result = discover_upskilling_pathways_data(
+                settings=runtime.settings,
+                use_live_lookup=not runtime.settings.use_mock,
+            )
+            summary = runtime.maybe_generate(
+                agent_name=self.name,
+                system_prompt=self.system_prompt,
+                user_prompt=(
+                    f"Root question: {state['root_question']}\n"
+                    f"Sub-questions: {[item['question'] for item in state['research_questions']]}\n"
+                    "Turn the following retrieval notes into a data availability matrix and data gap analysis:\n"
+                    f"{result.summary}"
+                ),
+                fallback=result.summary,
+            )
+            return {
+                "datasets": result.datasets,
+                "sources": result.sources,
+                "data_availability_assessment": summary,
+                "flagged_issues": result.issues,
+            }
+
         if is_great_reallocation_question(state["root_question"]):
             result = discover_great_reallocation_data(
                 settings=runtime.settings,
