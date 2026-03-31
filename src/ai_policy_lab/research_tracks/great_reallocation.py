@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
-from ai_policy_lab.catalog import default_dataset_catalog
+from ai_policy_lab.catalog import default_dataset_catalog, infer_dataset_domain
 from ai_policy_lab.config import Settings
 from ai_policy_lab.connectors import (
     BLSConnector,
@@ -203,6 +203,17 @@ def is_upskilling_pathways_question(root_question: str) -> bool:
     return _UPSKILLING_PATHWAYS_QUESTION in normalized or (
         "ai" in normalized and sum(term in normalized for term in keywords) >= 2
     )
+
+
+def is_ai_labor_market_question(
+    root_question: str,
+    constraints: list[str] | None = None,
+) -> bool:
+    normalized = root_question.lower()
+    return "ai" in normalized and infer_dataset_domain(
+        question=root_question,
+        constraints=constraints,
+    ) == "labor_market"
 
 
 def get_great_reallocation_subquestions() -> list[ResearchQuestion]:

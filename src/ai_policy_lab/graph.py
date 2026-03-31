@@ -77,6 +77,7 @@ def run_research(
         root_question=root_question,
         domain_constraints=domain_constraints,
         quality_floor=quality_floor,
+        runtime_mode="mock" if runtime.settings.use_mock else "live",
     )
     graph = build_graph(runtime)
     last_state: dict[str, object] = dict(initial_state)

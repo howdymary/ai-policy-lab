@@ -9,6 +9,7 @@ from ai_policy_lab.research_tracks.great_reallocation import (
     discover_upskilling_pathways_literature,
     get_great_reallocation_subquestions,
     get_upskilling_pathways_subquestions,
+    is_ai_labor_market_question,
     is_great_reallocation_question,
     is_upskilling_pathways_question,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "discover_upskilling_pathways_literature",
     "get_great_reallocation_subquestions",
     "get_upskilling_pathways_subquestions",
+    "is_ai_labor_market_question",
     "is_great_reallocation_question",
     "is_upskilling_pathways_question",
 ]

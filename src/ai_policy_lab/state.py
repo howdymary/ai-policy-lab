@@ -25,6 +25,7 @@ ResearchQuestionPriority = Literal["primary", "secondary", "exploratory"]
 NormalizationStatus = Literal["raw", "cleaned", "normalized", "merged"]
 QualityFloor = Literal["tier_1", "tier_2", "tier_3"]
 RunStatus = Literal["running", "completed", "failed"]
+RuntimeMode = Literal["live", "mock"]
 PhaseName = Literal[
     "phase_0_intake",
     "phase_1_discovery",
@@ -142,6 +143,7 @@ class ResearchState(TypedDict):
     messages: Annotated[list[MessageRecord], operator.add]
     current_phase: PhaseName
     agent_log: Annotated[list[AgentLogEntry], operator.add]
+    runtime_mode: RuntimeMode
     run_status: RunStatus
     run_errors: Annotated[list[str], operator.add]
 
@@ -151,6 +153,7 @@ def make_initial_state(
     root_question: str,
     domain_constraints: list[str] | None = None,
     quality_floor: QualityFloor = "tier_2",
+    runtime_mode: RuntimeMode = "live",
 ) -> ResearchState:
     sanitized_question = sanitize_user_input(root_question)
     sanitized_constraints = sanitize_user_inputs(domain_constraints or [])
@@ -178,6 +181,7 @@ def make_initial_state(
         "research_agenda": [],
         "messages": [{"role": "user", "content": sanitized_question}],
         "current_phase": "phase_0_intake",
+        "runtime_mode": runtime_mode,
         "run_status": "running",
         "run_errors": [],
         "agent_log": [

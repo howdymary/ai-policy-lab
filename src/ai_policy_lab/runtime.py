@@ -31,8 +31,12 @@ class ResearchRuntime:
         fallback: str,
         temperature: float | None = None,
     ) -> str:
-        if not self.use_live_llm():
+        if self.settings.use_mock:
             return fallback
+        if not self.llm.is_available():
+            raise LLMNotConfiguredError(
+                "Live LLM mode requires a configured OPENAI_API_KEY (or non-empty local token) and model."
+            )
         try:
             return self.llm.generate(
                 agent_name=agent_name,
@@ -40,6 +44,6 @@ class ResearchRuntime:
                 user_prompt=user_prompt,
                 temperature=temperature,
             )
-        except (LLMNotConfiguredError, LLMResponseError):
-            logger.warning("Falling back for agent %s after LLM generation failed.", agent_name)
-            return fallback
+        except (LLMNotConfiguredError, LLMResponseError) as exc:
+            logger.error("Live LLM generation failed for agent %s: %s", agent_name, exc)
+            raise

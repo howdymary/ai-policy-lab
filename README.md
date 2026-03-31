@@ -13,7 +13,7 @@ The current flagship focus is AI labor market intelligence. The main research qu
 - Ten specialist agents, including adversarial review and the Research Director orchestrator
 - Connectors for BLS, Census, FRED, O*NET, Federal Register, Crossref, Semantic Scholar, and a web-search placeholder
 - A markdown report renderer and CLI for writing `report.md` and `state.json` artifacts to `runs/`
-- Support for mock mode and live OpenAI-compatible LLM endpoints, including local Ollama
+- Support for live OpenAI-compatible LLM endpoints, including local Ollama, with explicit mock-only fallback for scaffold testing
 - Tests covering state initialization, graph flow, CLI behavior, config validation, sanitization, and core agent paths
 
 ## Current Scope
@@ -22,7 +22,7 @@ This repo is a working scaffold with real live discovery paths for the flagship 
 
 - The graph, CLI, report renderer, and state schema are implemented
 - Live retrieval exists for several federal and academic sources
-- Mock mode works for local development and test runs
+- Explicit mock mode remains available for local DAG scaffolding, but live mode is the default for research runs
 - The `Great Reallocation` and `Upskilling Pathways` tracks are wired as specialized paths
 - Some deeper public-release features, such as a persistent knowledge base and notebook generation, are still future work
 
@@ -44,7 +44,7 @@ poetry install
 cp .env.example .env
 ```
 
-The project defaults to mock mode, so you can exercise the DAG without API keys.
+The project defaults to live mode. For real runs, provide your own hosted-provider key or configure a local OpenAI-compatible endpoint such as Ollama.
 
 ## API Keys
 
@@ -65,15 +65,23 @@ export APL_DEFAULT_MODEL=qwopus-q4km
 export APL_USE_MOCK=false
 ```
 
+Mock mode is opt-in only and should be used only for clearly labeled scaffold tests:
+
+```bash
+export APL_USE_MOCK=true
+poetry run ai-policy-lab run --allow-mock --question "Scaffold test question"
+```
+
 ## Run It
 
-Run a mock job:
+Run a live job with a local model:
 
 ```bash
 poetry run ai-policy-lab run \
   --question "How is AI adoption reshaping occupational mobility in U.S. metros?" \
   --constraint "United States" \
   --constraint "MSA-level where possible" \
+  --model qwopus-q4km \
   --quality-floor tier_2
 ```
 
@@ -109,7 +117,8 @@ poetry run pytest --cov=ai_policy_lab --cov-fail-under=85
 
 ## Troubleshooting
 
-- If you see `OPENAI_API_KEY must be set`, either enable mock mode with `APL_USE_MOCK=true` or set a non-empty key for your OpenAI-compatible endpoint.
+- If you see `OPENAI_API_KEY must be set`, provide your own hosted-provider key or configure a local OpenAI-compatible endpoint. For local Ollama, set `OPENAI_BASE_URL=http://localhost:11434/v1`, `OPENAI_API_KEY=ollama`, and pass `--model`.
+- If you see a message saying mock mode is disabled by default, either configure a live LLM endpoint or rerun with `--allow-mock` for explicitly labeled scaffold output.
 - If FRED requests fail with a missing-key error, set `FRED_API_KEY`.
 - If Semantic Scholar returns 429s, add `SEMANTIC_SCHOLAR_API_KEY`.
 - If a run fails early, check `state.json` for `run_status` and `run_errors`.

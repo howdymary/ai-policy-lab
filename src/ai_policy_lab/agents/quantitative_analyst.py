@@ -3,6 +3,7 @@ from __future__ import annotations
 from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
 from ai_policy_lab.research_tracks import (
     analyze_great_reallocation_exposure,
+    is_ai_labor_market_question,
     is_great_reallocation_question,
     is_upskilling_pathways_question,
 )
@@ -42,6 +43,24 @@ class QuantitativeAnalystAgent(BaseResearchAgent):
                     finding for finding in result.findings if finding["agent"] == self.name
                 ],
                 "methodology_description": methodology_description,
+                "quantitative_results": result.quantitative_results,
+                "flagged_issues": issues,
+            }
+
+        if is_ai_labor_market_question(state["root_question"], state["domain_constraints"]):
+            result = analyze_great_reallocation_exposure(
+                settings=runtime.settings,
+                use_live_lookup=not runtime.settings.use_mock,
+            )
+            issues = list(result.issues)
+            issues.append(
+                "NOTE: Generic AI labor-market questions reuse the Great Reallocation metro exposure analysis as a live baseline until a broader question-specific quantitative router is added."
+            )
+            return {
+                "findings": [
+                    finding for finding in result.findings if finding["agent"] == self.name
+                ],
+                "methodology_description": result.methodology_description,
                 "quantitative_results": result.quantitative_results,
                 "flagged_issues": issues,
             }

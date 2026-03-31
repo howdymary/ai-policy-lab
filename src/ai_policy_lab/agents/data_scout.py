@@ -5,6 +5,7 @@ from ai_policy_lab.catalog import default_dataset_catalog, infer_dataset_domain
 from ai_policy_lab.research_tracks import (
     discover_great_reallocation_data,
     discover_upskilling_pathways_data,
+    is_ai_labor_market_question,
     is_great_reallocation_question,
     is_upskilling_pathways_question,
 )
@@ -68,6 +69,34 @@ class DataScoutAgent(BaseResearchAgent):
                 "flagged_issues": result.issues,
             }
 
+        if is_ai_labor_market_question(state["root_question"], state["domain_constraints"]):
+            result = discover_great_reallocation_data(
+                settings=runtime.settings,
+                use_live_lookup=not runtime.settings.use_mock,
+            )
+            summary = runtime.maybe_generate(
+                agent_name=self.name,
+                system_prompt=self.system_prompt,
+                user_prompt=(
+                    f"{wrap_user_content('root_question', state['root_question'])}\n"
+                    f"{wrap_user_list('sub_questions', [item['question'] for item in state['research_questions']], item_tag='question')}\n"
+                    "Turn the following retrieval notes into a data availability matrix and data gap analysis tailored "
+                    "to the occupations or worker segments in the question:\n"
+                    f"{wrap_user_content('retrieval_notes', result.summary)}"
+                ),
+                fallback=result.summary,
+            )
+            issues = list(result.issues)
+            issues.append(
+                "NOTE: Generic AI labor-market questions reuse the Great Reallocation public-data spine until a broader live dataset router is added."
+            )
+            return {
+                "datasets": result.datasets,
+                "sources": result.sources,
+                "data_availability_assessment": summary,
+                "flagged_issues": issues,
+            }
+
         domain = infer_dataset_domain(
             question=state["root_question"],
             constraints=state["domain_constraints"],
@@ -84,13 +113,13 @@ class DataScoutAgent(BaseResearchAgent):
                 "The biggest likely gaps are restricted-use microdata, contemporaneous program evaluation inputs, "
                 "and researcher-built linkage tables that turn raw sources into analysis-ready panels."
             )
-            issues: list[str] = []
+            generic_issues: list[str] = []
         else:
             fallback = (
                 "No domain-specific datasets are preconfigured for this question yet. Use discovery connectors "
                 "and source review to identify the right empirical base before quantitative analysis."
             )
-            issues = [
+            generic_issues = [
                 f"WARNING: No domain-aware dataset catalog is available yet for inferred domain '{domain}'."
             ]
         return {
@@ -101,5 +130,5 @@ class DataScoutAgent(BaseResearchAgent):
                 user_prompt=prompt,
                 fallback=fallback,
             ),
-            "flagged_issues": issues,
+            "flagged_issues": generic_issues,
         }

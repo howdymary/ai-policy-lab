@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ai_policy_lab.state import AdversarialReviewItem, ResearchQuestion, ResearchState
+from ai_policy_lab.state import AdversarialReviewItem, ResearchQuestion, ResearchState, SourceRecord
 
 
 def _render_questions(questions: list[ResearchQuestion]) -> str:
@@ -53,6 +53,17 @@ def _render_adversarial_review(items: list[AdversarialReviewItem]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _render_sources(sources: list[SourceRecord]) -> str:
+    if not sources:
+        return "- No retrieved sources.\n"
+    return "".join(
+        f"- [{source.get('id', 'unknown')}] {source.get('title', 'Untitled')} "
+        f"({source.get('publication', 'Unknown publication')}, {str(source.get('date', ''))[:4]}) "
+        f"[{source.get('source_tier', 'unknown')}]\n"
+        for source in sources
+    )
+
+
 def render_report(state: ResearchState) -> str:
     executive_summary = state["executive_summary"] or "Executive summary pending."
     literature = state["existing_literature_summary"] or "Literature review pending."
@@ -61,10 +72,16 @@ def render_report(state: ResearchState) -> str:
     source_audit = state["source_audit_report"] or "Source audit pending."
     methodology_review = state["methodology_review"] or "Methodology review pending."
     limitations = state["flagged_issues"] or ["No issues logged."]
+    mock_banner = ""
+    if state.get("runtime_mode") == "mock":
+        mock_banner = (
+            "> WARNING: THIS REPORT WAS GENERATED IN EXPLICIT MOCK MODE. "
+            "It is scaffold output and must not be treated as live research.\n\n"
+        )
 
     limitation_lines = "".join(f"- {item}\n" for item in limitations)
 
-    return f"""# AI Policy Research Lab Report
+    return f"""{mock_banner}# AI Policy Research Lab Report
 
 ## 1. Executive Summary
 
@@ -113,6 +130,12 @@ Constraints: {", ".join(state["domain_constraints"]) if state["domain_constraint
 {_render_datasets(state)}
 
 ## 12. Source Audit
+
+### Retrieved Sources
+
+{_render_sources(state["citation_list"])}
+
+### Audit Summary
 
 {source_audit}
 """

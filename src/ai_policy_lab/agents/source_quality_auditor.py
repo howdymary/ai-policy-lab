@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ai_policy_lab.agents.base import BaseResearchAgent, StatePatch
 from ai_policy_lab.runtime import ResearchRuntime
-from ai_policy_lab.sanitize import wrap_user_content, wrap_user_list
+from ai_policy_lab.sanitize import wrap_user_content
 from ai_policy_lab.state import ResearchState
 
 SYSTEM_PROMPT = """You are the quality gate for citations, source tiers, provenance, recency,
@@ -33,9 +33,10 @@ class SourceQualityAuditorAgent(BaseResearchAgent):
                 f"<source_count>{source_count}</source_count>\n"
                 f"<tier_1_count>{tier_1_count}</tier_1_count>\n"
                 f"<tier_2_count>{tier_2_count}</tier_2_count>\n"
-                f"{wrap_user_list('source_titles', [source['title'] for source in state['sources']], item_tag='source')}\n"
                 f"{wrap_user_content('policy_landscape_summary', state['policy_landscape_summary'])}\n"
-                "Verify citation quality, source tiers, recency, and conflicts of interest. Return a concise audit summary."
+                "Verify citation quality, source tiers, recency, and conflicts of interest. "
+                "Return a concise audit summary. Do not cite or name individual sources; refer only to counts, "
+                "tiers, and retrieval coverage."
             ),
             fallback=fallback,
             temperature=0.1,

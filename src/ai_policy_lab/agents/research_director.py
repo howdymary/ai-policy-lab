@@ -131,12 +131,22 @@ class ResearchDirectorAgent(BaseResearchAgent):
         source_count = len(state["sources"])
         dataset_count = len(state["datasets"])
         adversarial_count = len(state["adversarial_review"])
+        if state["runtime_mode"] == "mock":
+            mode_sentence = (
+                "THIS REPORT WAS GENERATED IN EXPLICIT MOCK MODE. Treat it as an orchestration proof, "
+                "not as publishable research."
+            )
+        else:
+            mode_sentence = (
+                "This run used live LLM generation and live connector retrieval where the current build "
+                "has implemented provider support."
+            )
         executive_summary = (
             f"This run addressed the question: {state['root_question']}.\n\n"
             f"The scaffold completed all phases of the research DAG, cataloged {dataset_count} datasets, "
             f"captured {source_count} sources, produced {finding_count} validated findings, and logged "
             f"{adversarial_count} adversarial counterarguments. "
-            "If you ran in mock mode, treat this output as an orchestration proof rather than a publishable report."
+            f"{mode_sentence}"
         )
 
         state_for_render = dict(state)

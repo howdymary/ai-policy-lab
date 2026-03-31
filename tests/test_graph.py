@@ -64,3 +64,20 @@ def test_run_research_uses_specialized_great_reallocation_track(monkeypatch) -> 
     )
     assert any(dataset["id"] == "bls-jolts" for dataset in final_state["datasets"])
     assert any(source["id"].startswith("doi-") for source in final_state["sources"])
+
+
+def test_run_research_reuses_live_labor_spine_for_generic_ai_labor_question(monkeypatch) -> None:
+    monkeypatch.setenv("APL_USE_MOCK", "true")
+    runtime = ResearchRuntime.from_env()
+
+    final_state = run_research(
+        runtime=runtime,
+        root_question="How will AI impact high-paying knowledge jobs in the U.S. labor market right now?",
+        domain_constraints=["United States", "knowledge work"],
+        quality_floor="tier_2",
+    )
+
+    assert len(final_state["research_questions"]) == 6
+    assert any(dataset["id"] == "bls-jolts" for dataset in final_state["datasets"])
+    assert any(dataset["id"] == "census-acs" for dataset in final_state["datasets"])
+    assert final_state["sources"]

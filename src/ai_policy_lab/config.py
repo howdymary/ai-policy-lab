@@ -38,7 +38,7 @@ class Settings:
     def load(cls) -> Settings:
         load_dotenv()
         settings = cls(
-            use_mock=_env_bool("APL_USE_MOCK", True),
+            use_mock=_env_bool("APL_USE_MOCK", False),
             runs_dir=Path(os.getenv("APL_RUNS_DIR", "runs")),
             cache_ttl_hours=int(os.getenv("APL_CACHE_TTL_HOURS", "24")),
             default_model=os.getenv("APL_DEFAULT_MODEL", "gpt-4o-mini"),

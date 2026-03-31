@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from ai_policy_lab import runtime as runtime_module
 from ai_policy_lab.config import Settings
 from ai_policy_lab.llm import LLMNotConfiguredError, LLMResponseError
@@ -81,28 +83,30 @@ def test_maybe_generate_returns_live_output_when_available() -> None:
     assert fake_llm.calls
 
 
-def test_maybe_generate_falls_back_on_llm_not_configured_error() -> None:
+def test_maybe_generate_raises_on_llm_not_configured_error() -> None:
     fake_llm = _FakeLLM(raise_error=LLMNotConfiguredError("missing key"))
     runtime = ResearchRuntime(settings=_settings(use_mock=False), llm=fake_llm)
 
-    assert runtime.maybe_generate(
-        agent_name="research_director",
-        system_prompt="system",
-        user_prompt="user",
-        fallback="fallback text",
-    ) == "fallback text"
+    with pytest.raises(LLMNotConfiguredError, match="missing key"):
+        runtime.maybe_generate(
+            agent_name="research_director",
+            system_prompt="system",
+            user_prompt="user",
+            fallback="fallback text",
+        )
 
 
-def test_maybe_generate_falls_back_on_llm_response_error() -> None:
+def test_maybe_generate_raises_on_llm_response_error() -> None:
     fake_llm = _FakeLLM(raise_error=LLMResponseError("bad response"))
     runtime = ResearchRuntime(settings=_settings(use_mock=False), llm=fake_llm)
 
-    assert runtime.maybe_generate(
-        agent_name="research_director",
-        system_prompt="system",
-        user_prompt="user",
-        fallback="fallback text",
-    ) == "fallback text"
+    with pytest.raises(LLMResponseError, match="bad response"):
+        runtime.maybe_generate(
+            agent_name="research_director",
+            system_prompt="system",
+            user_prompt="user",
+            fallback="fallback text",
+        )
 
 
 def test_from_env_builds_runtime(monkeypatch) -> None:

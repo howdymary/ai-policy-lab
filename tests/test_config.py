@@ -72,3 +72,11 @@ def test_settings_validate_rejects_nonpositive_cache_ttl() -> None:
 
 def test_settings_validate_happy_path() -> None:
     _settings().validate()
+
+
+def test_settings_load_defaults_to_live_mode(monkeypatch) -> None:
+    monkeypatch.delenv("APL_USE_MOCK", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "ollama")
+    monkeypatch.setenv("OPENAI_BASE_URL", "http://localhost:11434/v1")
+
+    assert Settings.load().use_mock is False

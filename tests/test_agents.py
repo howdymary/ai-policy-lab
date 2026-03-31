@@ -142,6 +142,8 @@ def test_specialized_agents_return_expected_shapes(monkeypatch) -> None:
     complexity_patch = EconomicComplexityAgent().run(state, runtime)
 
     assert literature_patch["sources"]
+    assert "Retrieved sources cited in this section" in literature_patch["existing_literature_summary"]
+    assert "[doi-" in literature_patch["existing_literature_summary"] or "[src-" in literature_patch["existing_literature_summary"]
     assert data_patch["datasets"]
     assert isinstance(quant_patch["quantitative_results"], dict)
     assert "status" in quant_patch["quantitative_results"]

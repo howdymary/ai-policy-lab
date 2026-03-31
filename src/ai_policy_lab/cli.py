@@ -57,6 +57,11 @@ def run(
         help="Directory for report and state artifacts.",
     ),
     model: str | None = typer.Option(None, "--model", help="Override the default LLM model."),
+    allow_mock: bool = typer.Option(
+        False,
+        "--allow-mock",
+        help="Explicitly allow mock-mode scaffold output instead of a live research run.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging."),
     quiet: bool = typer.Option(False, "--quiet", help="Reduce log output."),
 ) -> None:
@@ -69,7 +74,27 @@ def run(
 
     logging.basicConfig(level=logging.DEBUG if verbose else logging.WARNING if quiet else logging.INFO)
 
-    runtime = ResearchRuntime.from_env()
+    try:
+        runtime = ResearchRuntime.from_env()
+    except ValueError as exc:
+        if allow_mock:
+            os.environ["APL_USE_MOCK"] = "true"
+            runtime = ResearchRuntime.from_env()
+        else:
+            raise typer.BadParameter(
+                str(exc)
+                + " Provide your own LLM credentials or local endpoint settings. "
+                "For local Ollama, set OPENAI_BASE_URL=http://localhost:11434/v1, "
+                "OPENAI_API_KEY=ollama, and choose a local model with --model."
+            ) from exc
+
+    if runtime.settings.use_mock and not allow_mock:
+        raise typer.BadParameter(
+            "Mock mode is disabled by default for research runs. "
+            "Provide your own LLM credentials or local endpoint settings, or rerun with --allow-mock "
+            "for clearly labeled scaffold output."
+        )
+
     if model:
         if not _MODEL_NAME_RE.match(model):
             raise typer.BadParameter("Model name contains invalid characters.")
@@ -98,9 +123,14 @@ def run(
     state_path.write_text(json.dumps(state, indent=2, cls=_StateEncoder), encoding="utf-8")
 
     mode_label = "mock" if runtime.settings.use_mock else "live"
+    mode_summary = (
+        "THIS RUN USED EXPLICIT MOCK MODE.\nTreat every output as scaffold-only."
+        if runtime.settings.use_mock
+        else "This run used live LLM generation and live retrieval where connectors were available."
+    )
     console.print(
         Panel.fit(
-            f"Run completed in [bold]{mode_label}[/bold] mode.\n"
+            f"{mode_summary}\n\nRun completed in [bold]{mode_label}[/bold] mode.\n"
             f"Report: {report_path}\n"
             f"State: {state_path}",
             title="AI Policy Lab",
