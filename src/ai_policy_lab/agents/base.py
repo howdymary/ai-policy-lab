@@ -44,6 +44,15 @@ class BaseResearchAgent(ABC):
                 )
 
         if not pieces:
+            findings = patch.get("findings")
+            if isinstance(findings, list) and findings:
+                first_finding = findings[0]
+                if isinstance(first_finding, dict):
+                    claim = first_finding.get("claim")
+                    if isinstance(claim, str) and claim.strip():
+                        pieces.append(claim)
+
+        if not pieces:
             pieces.append(f"{self.name} completed.")
 
         return compact_whitespace(pieces[0])[:240]

@@ -118,6 +118,8 @@ def test_generic_agents_return_expected_shapes(monkeypatch) -> None:
     assert patches["data"]["datasets"] == []
     assert isinstance(patches["policy"]["policy_landscape_summary"], str)
     assert isinstance(patches["quant"]["quantitative_results"], dict)
+    assert patches["political"]["findings"][0]["agent"] == "political_economy"
+    assert patches["complexity"]["findings"][0]["agent"] == "economic_complexity"
     assert isinstance(patches["political"]["flagged_issues"], list)
     assert isinstance(patches["complexity"]["flagged_issues"], list)
     assert isinstance(patches["audit"]["source_audit_report"], str)
