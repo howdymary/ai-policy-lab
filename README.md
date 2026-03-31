@@ -147,4 +147,4 @@ tests/            CLI, graph, agent, config, runtime, and sanitization coverage
 
 ## Status
 
-The repo is ready for an early public release. The strongest end-to-end coverage is currently in labor-market and AI workforce research, and broader policy generalization is still in progress.
+The strongest end-to-end coverage is currently in labor-market and AI workforce research, and broader policy generalization is still in progress.
