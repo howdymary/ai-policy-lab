@@ -60,7 +60,7 @@ def run(
     allow_mock: bool = typer.Option(
         False,
         "--allow-mock",
-        help="Explicitly allow mock-mode scaffold output instead of a live research run.",
+        help="Explicitly allow mock-mode validation output instead of a live research run.",
     ),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging."),
     quiet: bool = typer.Option(False, "--quiet", help="Reduce log output."),
@@ -92,7 +92,7 @@ def run(
         raise typer.BadParameter(
             "Mock mode is disabled by default for research runs. "
             "Provide your own LLM credentials or local endpoint settings, or rerun with --allow-mock "
-            "for clearly labeled scaffold output."
+            "for clearly labeled validation output."
         )
 
     if model:
@@ -124,7 +124,7 @@ def run(
 
     mode_label = "mock" if runtime.settings.use_mock else "live"
     mode_summary = (
-        "THIS RUN USED EXPLICIT MOCK MODE.\nTreat every output as scaffold-only."
+        "THIS RUN USED EXPLICIT MOCK MODE.\nTreat every output as a validation-only draft."
         if runtime.settings.use_mock
         else "This run used live LLM generation and live retrieval where connectors were available."
     )

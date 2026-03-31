@@ -417,8 +417,8 @@ def test_cache_expiry_triggers_refresh(monkeypatch, tmp_path: Path) -> None:
     assert len(client.requests) == 1
 
 
-def test_web_search_placeholder() -> None:
+def test_web_search_interface_message() -> None:
     connector = WebSearchConnector(_settings())
 
-    with pytest.raises(NotImplementedError, match="placeholder"):
+    with pytest.raises(NotImplementedError, match="reserved for a future provider integration"):
         connector.search(query="AI policy")

@@ -22,9 +22,23 @@ def infer_dataset_domain(*, question: str = "", constraints: Sequence[str] | Non
     }
     climate_keywords = {"climate", "environment", "emissions", "pollution", "epa", "energy"}
     crypto_keywords = {"crypto", "cryptocurrency", "bitcoin", "blockchain", "token"}
+    demographic_election_keywords = {
+        "immigration",
+        "immigrant",
+        "citizenship",
+        "naturalization",
+        "voting",
+        "election",
+        "electorate",
+        "demographic",
+        "demographics",
+        "turnout",
+    }
 
     if any(keyword in corpus for keyword in labor_keywords):
         return "labor_market"
+    if any(keyword in corpus for keyword in demographic_election_keywords):
+        return "demography_elections"
     if any(keyword in corpus for keyword in climate_keywords):
         return "environment"
     if any(keyword in corpus for keyword in crypto_keywords):
@@ -33,6 +47,66 @@ def infer_dataset_domain(*, question: str = "", constraints: Sequence[str] | Non
 
 
 def default_dataset_catalog(*, domain: str = "labor_market") -> list[DatasetRecord]:
+    if domain == "demography_elections":
+        return [
+            {
+                "id": "census-acs-demographics",
+                "name": "American Community Survey Demographic Tables",
+                "source_agency": "Census",
+                "url": "https://www.census.gov/programs-surveys/acs",
+                "format": "api",
+                "temporal_coverage": "2005-present, annual",
+                "geographic_coverage": "US national, state, county, tract",
+                "key_variables": ["nativity", "citizenship", "race_ethnicity", "age", "education"],
+                "update_frequency": "annual",
+                "access_method": "public_download",
+                "quality_notes": "Core demographic and citizenship composition source for electorate and population change analysis.",
+                "normalization_status": "raw",
+            },
+            {
+                "id": "cps-voting-registration",
+                "name": "Current Population Survey Voting and Registration Supplement",
+                "source_agency": "Census/BLS",
+                "url": "https://www.census.gov/topics/public-sector/voting/data/tables.html",
+                "format": "download",
+                "temporal_coverage": "Biennial election-cycle supplement",
+                "geographic_coverage": "US household microdata",
+                "key_variables": ["registration_status", "turnout", "citizenship", "race_ethnicity", "age"],
+                "update_frequency": "biennial",
+                "access_method": "public_download",
+                "quality_notes": "Best public source for turnout and registration patterns by demographic group.",
+                "normalization_status": "raw",
+            },
+            {
+                "id": "dhs-yearbook-immigration",
+                "name": "DHS Yearbook of Immigration Statistics",
+                "source_agency": "DHS",
+                "url": "https://www.dhs.gov/immigration-statistics/yearbook",
+                "format": "download",
+                "temporal_coverage": "Annual historical series",
+                "geographic_coverage": "US national and selected state measures",
+                "key_variables": ["lawful_permanent_residents", "naturalizations", "refugees", "nonimmigrants"],
+                "update_frequency": "annual",
+                "access_method": "public_download",
+                "quality_notes": "Primary federal administrative source for immigration flow and status trends.",
+                "normalization_status": "raw",
+            },
+            {
+                "id": "eac-eavs",
+                "name": "Election Administration and Voting Survey",
+                "source_agency": "EAC",
+                "url": "https://www.eac.gov/research-and-data/studies-and-reports",
+                "format": "download",
+                "temporal_coverage": "Biennial federal election administration data",
+                "geographic_coverage": "US state and local election administration",
+                "key_variables": ["registration", "ballots_cast", "mail_voting", "provisional_ballots"],
+                "update_frequency": "biennial",
+                "access_method": "public_download",
+                "quality_notes": "Federal election-administration data useful for turnout and electoral process context.",
+                "normalization_status": "raw",
+            },
+        ]
+
     if domain != "labor_market":
         return []
 

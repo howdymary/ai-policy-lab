@@ -72,7 +72,7 @@ class QuantitativeAnalystAgent(BaseResearchAgent):
         )
         execution_label = "mock mode" if runtime.settings.use_mock else "this run"
         fallback = (
-            "Quantitative analysis scaffold prepared. Start with descriptive trend analysis, subgroup splits, and "
+            "Quantitative analysis plan prepared. Start with descriptive trend analysis, subgroup splits, and "
             "place-based comparisons; then evaluate whether any causal design is credible given the available data. "
             f"No empirical estimation has been executed yet in {execution_label}."
         )
@@ -85,7 +85,7 @@ class QuantitativeAnalystAgent(BaseResearchAgent):
             ),
             "quantitative_results": {
                 "status": "not_executed",
-                "mode": "mock" if runtime.settings.use_mock else "live_scaffold",
+                "mode": "mock" if runtime.settings.use_mock else "live_planning",
             },
             "flagged_issues": [
                 "Quantitative analysis has not yet been run on live normalized datasets; current output is a methodological workplan."

@@ -53,7 +53,7 @@ class MethodologyReviewerAgent(BaseResearchAgent):
         )
         if status != "completed":
             issues.append(
-                "WARNING: Quantitative analysis is still scaffold-level; no effect sizes, confidence intervals, or robustness checks were produced."
+                "WARNING: Quantitative analysis has not yet produced effect sizes, confidence intervals, or robustness checks for this run."
             )
         elif analysis_type == "descriptive_index":
             issues.append(

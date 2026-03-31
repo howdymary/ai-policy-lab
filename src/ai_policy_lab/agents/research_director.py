@@ -121,7 +121,7 @@ class ResearchDirectorAgent(BaseResearchAgent):
         return {
             "research_questions": additions,
             "flagged_issues": [
-                "Mid-course refinement is heuristic in the scaffold build; replace with live evidence-driven reprioritization before production use."
+                "Mid-course refinement is still heuristic in the current build; replace it with evidence-driven reprioritization before production use."
             ],
             "current_phase": "phase_2_analysis",
         }
@@ -133,7 +133,7 @@ class ResearchDirectorAgent(BaseResearchAgent):
         adversarial_count = len(state["adversarial_review"])
         if state["runtime_mode"] == "mock":
             mode_sentence = (
-                "THIS REPORT WAS GENERATED IN EXPLICIT MOCK MODE. Treat it as an orchestration proof, "
+                "THIS REPORT WAS GENERATED IN EXPLICIT MOCK MODE. Treat it as a validation-only draft, "
                 "not as publishable research."
             )
         else:
@@ -143,7 +143,7 @@ class ResearchDirectorAgent(BaseResearchAgent):
             )
         executive_summary = (
             f"This run addressed the question: {state['root_question']}.\n\n"
-            f"The scaffold completed all phases of the research DAG, cataloged {dataset_count} datasets, "
+            f"The system completed all phases of the research DAG, cataloged {dataset_count} datasets, "
             f"captured {source_count} sources, produced {finding_count} validated findings, and logged "
             f"{adversarial_count} adversarial counterarguments. "
             f"{mode_sentence}"

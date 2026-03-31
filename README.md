@@ -11,20 +11,21 @@ The current flagship focus is AI labor market intelligence. The main research qu
 - A typed shared state bus (`ResearchState`) with append-only reducers for auditability
 - A LangGraph DAG with intake, discovery, midcourse refinement, analysis, quality gate, and synthesis phases
 - Ten specialist agents, including adversarial review and the Research Director orchestrator
-- Connectors for BLS, Census, FRED, O*NET, Federal Register, Crossref, Semantic Scholar, and a web-search placeholder
+- Connectors for BLS, Census, FRED, O*NET, Federal Register, Crossref, Semantic Scholar, and a reserved web-search integration point
 - A markdown report renderer and CLI for writing `report.md` and `state.json` artifacts to `runs/`
-- Support for live OpenAI-compatible LLM endpoints, including local Ollama, with explicit mock-only fallback for scaffold testing
+- Support for live OpenAI-compatible LLM endpoints, including local Ollama, with explicit mock-only fallback for validation runs
 - Tests covering state initialization, graph flow, CLI behavior, config validation, sanitization, and core agent paths
 
 ## Current Scope
 
-This repo is a working scaffold with real live discovery paths for the flagship labor-market track, not a finished public data product.
+This repo is an early public release with real live discovery paths for the flagship labor-market track, not a finished general-purpose policy research platform.
 
 - The graph, CLI, report renderer, and state schema are implemented
 - Live retrieval exists for several federal and academic sources
-- Explicit mock mode remains available for local DAG scaffolding, but live mode is the default for research runs
+- Explicit mock mode remains available for validation-only DAG checks, but live mode is the default for research runs
 - The `Great Reallocation` and `Upskilling Pathways` tracks are wired as specialized paths
-- Some deeper public-release features, such as a persistent knowledge base and notebook generation, are still future work
+- We are actively generalizing the research engine to broader domains, but today the repo is much more adept for labor and AI-at-work questions than for arbitrary policy topics
+- Some deeper release features, such as a persistent knowledge base and notebook generation, are still roadmap items
 
 ## Quickstart
 
@@ -65,7 +66,7 @@ export APL_DEFAULT_MODEL=qwopus-q4km
 export APL_USE_MOCK=false
 ```
 
-Mock mode is opt-in only and should be used only for clearly labeled scaffold tests:
+Mock mode is opt-in only and should be used only for clearly labeled validation runs:
 
 ```bash
 export APL_USE_MOCK=true
@@ -118,7 +119,7 @@ poetry run pytest --cov=ai_policy_lab --cov-fail-under=85
 ## Troubleshooting
 
 - If you see `OPENAI_API_KEY must be set`, provide your own hosted-provider key or configure a local OpenAI-compatible endpoint. For local Ollama, set `OPENAI_BASE_URL=http://localhost:11434/v1`, `OPENAI_API_KEY=ollama`, and pass `--model`.
-- If you see a message saying mock mode is disabled by default, either configure a live LLM endpoint or rerun with `--allow-mock` for explicitly labeled scaffold output.
+- If you see a message saying mock mode is disabled by default, either configure a live LLM endpoint or rerun with `--allow-mock` for explicitly labeled validation output.
 - If FRED requests fail with a missing-key error, set `FRED_API_KEY`.
 - If Semantic Scholar returns 429s, add `SEMANTIC_SCHOLAR_API_KEY`.
 - If a run fails early, check `state.json` for `run_status` and `run_errors`.
@@ -127,6 +128,7 @@ poetry run pytest --cov=ai_policy_lab --cov-fail-under=85
 
 - [Architecture](./ARCHITECTURE.md)
 - [Contributing](./CONTRIBUTING.md)
+- [Audit Report (March 30, 2026)](./docs/audit_report_2026-03-30.md) - retained intentionally as the release-hardening audit trail
 
 ## Project Layout
 
@@ -145,4 +147,4 @@ tests/            CLI, graph, agent, config, runtime, and sanitization coverage
 
 ## Status
 
-The repo is in active release-prep mode. The current codebase has passing tests and hardened connector/runtime behavior, and the remaining work is mostly about documentation polish and future feature depth.
+The repo is ready for an early public release. The strongest end-to-end coverage is currently in labor-market and AI workforce research, and broader policy generalization is still in progress.

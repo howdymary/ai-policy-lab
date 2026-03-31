@@ -47,7 +47,7 @@ class SourceQualityAuditorAgent(BaseResearchAgent):
             )
         elif "policy scanner is not connected" in state["policy_landscape_summary"].lower():
             issues.append(
-                "WARNING: Policy discovery is still stubbed, so legislative and regulatory claims are not yet covered by live primary sources."
+                "WARNING: Policy discovery is currently limited, so legislative and regulatory claims are not yet fully covered by live primary sources."
             )
         return {
             "source_audit_report": report,

@@ -15,8 +15,8 @@ def _render_questions(questions: list[ResearchQuestion]) -> str:
 def _render_findings(state: ResearchState) -> str:
     if not state["findings"]:
         return (
-            "No validated findings have been produced yet. This run should be treated as a planning "
-            "and scaffolding pass until live retrieval and analysis are enabled.\n"
+            "No validated findings have been produced yet. Treat this run as an early research draft "
+            "until live retrieval and analysis are available for the question being asked.\n"
         )
 
     lines = []
@@ -76,7 +76,7 @@ def render_report(state: ResearchState) -> str:
     if state.get("runtime_mode") == "mock":
         mock_banner = (
             "> WARNING: THIS REPORT WAS GENERATED IN EXPLICIT MOCK MODE. "
-            "It is scaffold output and must not be treated as live research.\n\n"
+            "It is a validation-only draft and must not be treated as live research.\n\n"
         )
 
     limitation_lines = "".join(f"- {item}\n" for item in limitations)

@@ -76,11 +76,11 @@ Append-only list fields use LangGraph reducers so multiple agents can contribute
 | Federal Register | Federal policy scan | Used for primary-source institutional context |
 | Crossref | DOI and paper metadata enrichment | Uses configured contact email when present |
 | Semantic Scholar | Academic search | Live API path supported |
-| Web search | Future integration point | Explicit placeholder, not yet implemented |
+| Web search | Future integration point | Interface reserved for a future provider integration |
 
 ## Runtime Behavior
 
-- Mock mode returns deterministic fallback text and avoids live API dependencies.
+- Mock mode returns deterministic fallback text and is intended only for explicit validation runs.
 - Live mode uses the configured OpenAI-compatible endpoint.
 - The runtime sanitizes user input before it enters prompt construction.
 - Graph execution records partial state and failure details when a node raises.
@@ -92,4 +92,4 @@ Append-only list fields use LangGraph reducers so multiple agents can contribute
 
 ## Current Release Status
 
-This architecture is ready for public-facing documentation and local development. It is not yet a full production research platform with a persistent knowledge base or notebook-generation pipeline, but the main DAG, connectors, and quality gates are operational.
+This architecture is ready for an early public release and local development. The most mature research coverage is currently in labor-market and AI-at-work questions, while broader policy-domain generalization is still in progress. It is not yet a full production research platform with a persistent knowledge base or notebook-generation pipeline, but the main DAG, connectors, and quality gates are operational.
