@@ -79,6 +79,28 @@ poetry run ai-policy-lab run \
   --quality-floor tier_2
 ```
 
+## Great Reallocation live discovery path
+
+The first real end-to-end discovery path is wired for the flagship question:
+
+- Research Director uses the six Great Reallocation sub-questions from the system spec
+- Data Scout performs live BLS and Census retrieval and records real coverage notes
+- Literature Review builds a real source inventory anchored in the benchmark papers and Brookings reports
+- FRED retrieval is supported when `FRED_API_KEY` is configured
+
+Example:
+
+```bash
+APL_USE_MOCK=false OPENAI_API_KEY='' poetry run ai-policy-lab run \
+  --question "How is AI adoption reshaping the occupational structure of the U.S. labor market, and what are the distributional consequences across geographies, education levels, and demographic groups?" \
+  --constraint "United States" \
+  --constraint "2015-2025" \
+  --constraint "MSA-level where possible" \
+  --quality-floor tier_2
+```
+
+Without `FRED_API_KEY`, the run still performs live BLS and Census discovery and records FRED as a cataloged-but-unfetched macro layer.
+
 ## Project layout
 
 ```text

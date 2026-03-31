@@ -15,15 +15,22 @@ class SourceQualityAuditorAgent(BaseResearchAgent):
 
     def run(self, state: ResearchState, runtime: ResearchRuntime) -> StatePatch:
         source_count = len(state["sources"])
-        report = (
-            f"Source audit completed on {source_count} captured sources. "
-            "In this scaffold build, the main blocker is that live literature and policy retrieval "
-            "have not yet populated a real bibliography."
-        )
         issues = []
+        tier_1_count = sum(1 for source in state["sources"] if source["source_tier"] == "tier_1")
+        tier_2_count = sum(1 for source in state["sources"] if source["source_tier"] == "tier_2")
+        report = (
+            f"Source audit completed on {source_count} captured sources, including "
+            f"{tier_1_count} Tier 1 and {tier_2_count} Tier 2 records. "
+            "The bibliography is now populated for the Great Reallocation path, but policy-source ingestion "
+            "and source-to-claim validation still need to be completed before publication."
+        )
         if source_count == 0:
             issues.append(
                 "BLOCKER: No live sources were ingested, so claims cannot yet meet the Tier 1/Tier 2 citation standard."
+            )
+        elif state["policy_landscape_summary"].startswith("Mock mode: policy scanner"):
+            issues.append(
+                "WARNING: Policy discovery is still stubbed, so legislative and regulatory claims are not yet covered by live primary sources."
             )
         return {
             "source_audit_report": report,

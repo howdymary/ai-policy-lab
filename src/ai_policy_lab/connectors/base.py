@@ -20,8 +20,14 @@ class BaseConnector:
     def timeout(self) -> float:
         return self.settings.http_timeout_seconds
 
-    def _get(self, url: str, *, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _get_json(
+        self,
+        url: str,
+        *,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
         with httpx.Client(timeout=self.timeout) as client:
-            response = client.get(url, params=params)
+            response = client.get(url, params=params, headers=headers)
             response.raise_for_status()
-            return dict(response.json())
+            return response.json()

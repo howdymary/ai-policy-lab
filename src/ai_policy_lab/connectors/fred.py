@@ -28,4 +28,4 @@ class FREDConnector(BaseConnector):
         if observation_end:
             params["observation_end"] = observation_end
 
-        return self._get(self.base_url, params=params)
+        return self._get_json(self.base_url, params=params)

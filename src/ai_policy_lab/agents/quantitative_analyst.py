@@ -19,10 +19,11 @@ class QuantitativeAnalystAgent(BaseResearchAgent):
             f"Datasets available: {[dataset['name'] for dataset in state['datasets']]}\n"
             "Draft a methods plan that starts with descriptive analysis and only then considers causal designs."
         )
+        execution_label = "mock mode" if runtime.settings.use_mock else "this run"
         fallback = (
             "Quantitative analysis scaffold prepared. Start with descriptive trend analysis, subgroup splits, and "
             "place-based comparisons; then evaluate whether any causal design is credible given the available data. "
-            "No empirical estimation has been executed yet in mock mode."
+            f"No empirical estimation has been executed yet in {execution_label}."
         )
         return {
             "methodology_description": runtime.maybe_generate(
