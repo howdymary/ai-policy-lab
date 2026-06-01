@@ -17,6 +17,8 @@ def test_run_research_completes_mock_graph(monkeypatch) -> None:
     assert final_state["run_status"] == "completed"
     assert final_state["run_errors"] == []
     assert len(final_state["research_questions"]) >= 5
+    assert final_state["swarm_tasks"]
+    assert "Swarm Orchestration Ledger" in final_state["full_report"]
     assert final_state["datasets_manifest"]
     assert "Executive Summary" in final_state["full_report"]
     assert any("BLOCKER" in issue or "WARNING" in issue for issue in final_state["flagged_issues"])

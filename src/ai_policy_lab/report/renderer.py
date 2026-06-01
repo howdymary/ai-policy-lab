@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from ai_policy_lab.state import AdversarialReviewItem, ResearchQuestion, ResearchState, SourceRecord
+from ai_policy_lab.state import (
+    AdversarialReviewItem,
+    ResearchQuestion,
+    ResearchState,
+    SourceRecord,
+    SwarmTask,
+)
 
 
 def _render_questions(questions: list[ResearchQuestion]) -> str:
@@ -64,6 +70,36 @@ def _render_sources(sources: list[SourceRecord]) -> str:
     )
 
 
+def _render_swarm_tasks(tasks: list[SwarmTask]) -> str:
+    latest = _latest_swarm_tasks(tasks)
+    if not latest:
+        return "- No swarm tasks were logged.\n"
+
+    counts: dict[str, int] = {}
+    for task in latest:
+        status = task.get("status", "unknown")
+        counts[status] = counts.get(status, 0) + 1
+    summary = ", ".join(f"{status}: {count}" for status, count in sorted(counts.items()))
+    lines = [f"- Status summary: {summary}"]
+    for task in latest:
+        lines.append(
+            f"- [{task.get('status', 'unknown')}] {task.get('assigned_agent', 'unknown')} — "
+            f"{task.get('objective', 'No objective')} "
+            f"(contract: {task.get('output_contract', 'unspecified')})"
+        )
+    return "\n".join(lines) + "\n"
+
+
+def _latest_swarm_tasks(tasks: list[SwarmTask]) -> list[SwarmTask]:
+    latest: dict[str, SwarmTask] = {}
+    for task in tasks:
+        latest[task["id"]] = task
+    return sorted(
+        latest.values(),
+        key=lambda task: (task["phase"], task["research_question_id"], task["assigned_agent"]),
+    )
+
+
 def render_report(state: ResearchState) -> str:
     executive_summary = state["executive_summary"] or "Executive summary pending."
     literature = state["existing_literature_summary"] or "Literature review pending."
@@ -124,6 +160,10 @@ Constraints: {", ".join(state["domain_constraints"]) if state["domain_constraint
 ## 10. Research Questions
 
 {_render_questions(state["research_questions"])}
+
+## Swarm Orchestration Ledger
+
+{_render_swarm_tasks(state["swarm_tasks"])}
 
 ## 11. Data Appendix
 

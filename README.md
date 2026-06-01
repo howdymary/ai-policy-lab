@@ -9,8 +9,9 @@ The current flagship focus is AI labor market intelligence. The main research qu
 ## What’s Included
 
 - A typed shared state bus (`ResearchState`) with append-only reducers for auditability
-- A LangGraph DAG with intake, discovery, midcourse refinement, analysis, quality gate, and synthesis phases
+- A LangGraph DAG with intake, swarm planning, discovery, midcourse refinement, analysis, quality gate, and synthesis phases
 - Ten specialist agents, including adversarial review and the Research Director orchestrator
+- A deterministic Swarm Coordinator that creates a specialist task ledger, checks phase coverage, and carries unresolved work into the report
 - Connectors for BLS, Census, FRED, O*NET, Federal Register, Crossref, Semantic Scholar, and a reserved web-search integration point
 - A markdown report renderer and CLI for writing `report.md` and `state.json` artifacts to `runs/`
 - Support for live OpenAI-compatible LLM endpoints, including local Ollama, with explicit mock-only fallback for validation runs
@@ -21,6 +22,7 @@ The current flagship focus is AI labor market intelligence. The main research qu
 This repo is an early public release with real live discovery paths for the flagship labor-market track, not a finished general-purpose policy research platform.
 
 - The graph, CLI, report renderer, and state schema are implemented
+- The graph now logs explicit swarm tasks so autonomous runs can be audited by specialist, phase, and output contract
 - Live retrieval exists for several federal and academic sources
 - Explicit mock mode remains available for validation-only DAG checks, but live mode is the default for research runs
 - The `Great Reallocation` and `Upskilling Pathways` tracks are wired as specialized paths
@@ -135,6 +137,8 @@ poetry run pytest --cov=ai_policy_lab --cov-fail-under=85
 ```text
 src/ai_policy_lab/
   agents/         agent prompts and node implementations
+  agents/swarm_coordinator.py
+                  task-ledger planning and phase-boundary swarm checks
   connectors/     external data clients and shared HTTP utilities
   report/         final report renderer
   cli.py          Typer CLI

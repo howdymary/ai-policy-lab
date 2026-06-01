@@ -12,6 +12,7 @@ def test_make_initial_state_sets_expected_defaults() -> None:
     assert state["domain_constraints"] == ["United States", "2015-2025"]
     assert state["quality_floor"] == "tier_2"
     assert state["research_questions"] == []
+    assert state["swarm_tasks"] == []
     assert state["datasets"] == []
     assert state["adversarial_review"] == []
     assert state["current_phase"] == "phase_0_intake"

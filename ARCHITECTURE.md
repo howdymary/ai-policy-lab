@@ -7,32 +7,38 @@
 ```mermaid
 flowchart TD
     START --> intake["Research Director: intake"]
-    intake --> lit["Literature Review"]
-    intake --> data["Data Scout"]
-    intake --> policy["Policy Scanner"]
+    intake --> swarm0["Swarm Coordinator: task plan"]
+    swarm0 --> lit["Literature Review"]
+    swarm0 --> data["Data Scout"]
+    swarm0 --> policy["Policy Scanner"]
     lit --> mid["Research Director: midcourse"]
     data --> mid
     policy --> mid
-    mid --> quant["Quantitative Analyst"]
-    mid --> pol["Political Economy"]
-    mid --> econ["Economic Complexity"]
-    quant --> audit["Source Quality Auditor"]
-    pol --> audit
-    econ --> audit
+    mid --> swarm1["Swarm Coordinator: discovery review"]
+    swarm1 --> quant["Quantitative Analyst"]
+    swarm1 --> pol["Political Economy"]
+    swarm1 --> econ["Economic Complexity"]
+    quant --> swarm2["Swarm Coordinator: analysis review"]
+    pol --> swarm2
+    econ --> swarm2
+    swarm2 --> audit["Source Quality Auditor"]
     audit --> methods["Methodology Reviewer"]
     methods --> adversarial["Adversarial Reviewer"]
-    adversarial --> synth["Research Director: synthesis"]
-    synth --> END
+    adversarial --> swarm3["Swarm Coordinator: quality review"]
+    swarm3 --> synth["Research Director: synthesis"]
+    synth --> swarm4["Swarm Coordinator: synthesis review"]
+    swarm4 --> END
 ```
 
 ## Phases
 
 1. Phase 0 intake: the Research Director decomposes the root question into sub-questions.
-2. Phase 1 discovery: literature, datasets, and policy context are gathered in parallel.
-3. Phase 1.5 refinement: the Research Director adjusts scope after discovery.
-4. Phase 2 analysis: quantitative, political-economy, and economic-complexity analysis run in parallel.
-5. Phase 3 quality gate: source audit, methodology review, and adversarial review run sequentially.
-6. Phase 4 synthesis: the Research Director assembles the final report.
+2. Swarm planning: the Swarm Coordinator converts research questions into an append-only specialist task ledger with output contracts and evidence requirements.
+3. Phase 1 discovery: literature, datasets, and policy context are gathered in parallel.
+4. Phase 1.5 refinement: the Research Director adjusts scope after discovery and the Swarm Coordinator reviews discovery coverage.
+5. Phase 2 analysis: quantitative, political-economy, and economic-complexity analysis run in parallel, followed by a swarm coverage check.
+6. Phase 3 quality gate: source audit, methodology review, and adversarial review run sequentially, followed by a swarm quality check.
+7. Phase 4 synthesis: the Research Director assembles the final report and the Swarm Coordinator closes the synthesis task.
 
 ## Shared State
 
@@ -40,6 +46,7 @@ The system passes one `ResearchState` dictionary through the graph. Important fi
 
 - `root_question` and `domain_constraints`
 - `research_questions`
+- `swarm_tasks`
 - `sources` and `datasets`
 - `findings`
 - `quantitative_results`
@@ -55,6 +62,7 @@ Append-only list fields use LangGraph reducers so multiple agents can contribute
 | Agent | Responsibility |
 |---|---|
 | Research Director | Decompose, refine, and synthesize the run |
+| Swarm Coordinator | Dispatch specialist tasks, review phase coverage, and surface blocked autonomous work |
 | Literature Review | Survey and summarize prior work |
 | Data Scout | Catalog datasets and data gaps |
 | Policy Scanner | Gather institutional and regulatory context |
@@ -82,6 +90,7 @@ Append-only list fields use LangGraph reducers so multiple agents can contribute
 
 - Mock mode returns deterministic fallback text and is intended only for explicit validation runs.
 - Live mode uses the configured OpenAI-compatible endpoint.
+- Swarm coordination is deterministic: it does not spend LLM tokens, and it records task status changes as append-only state events.
 - The runtime sanitizes user input before it enters prompt construction.
 - Graph execution records partial state and failure details when a node raises.
 

@@ -26,6 +26,7 @@ NormalizationStatus = Literal["raw", "cleaned", "normalized", "merged"]
 QualityFloor = Literal["tier_1", "tier_2", "tier_3"]
 RunStatus = Literal["running", "completed", "failed"]
 RuntimeMode = Literal["live", "mock"]
+SwarmTaskStatus = Literal["queued", "in_progress", "completed", "blocked", "deferred"]
 PhaseName = Literal[
     "phase_0_intake",
     "phase_1_discovery",
@@ -99,6 +100,21 @@ class ResearchQuestion(TypedDict):
     assigned_to: list[str]
 
 
+class SwarmTask(TypedDict):
+    """An append-only specialist task event emitted by the swarm coordinator."""
+
+    id: str
+    research_question_id: str
+    objective: str
+    assigned_agent: str
+    phase: PhaseName
+    status: SwarmTaskStatus
+    depends_on: list[str]
+    evidence_requirements: list[str]
+    output_contract: str
+    notes: str
+
+
 class AdversarialReviewItem(TypedDict):
     """A structured counterargument emitted by the adversarial reviewer."""
 
@@ -125,6 +141,7 @@ class ResearchState(TypedDict):
     sources: Annotated[list[SourceRecord], operator.add]
     datasets: Annotated[list[DatasetRecord], operator.add]
     research_questions: Annotated[list[ResearchQuestion], operator.add]
+    swarm_tasks: Annotated[list[SwarmTask], operator.add]
     existing_literature_summary: str
     data_availability_assessment: str
     policy_landscape_summary: str
@@ -164,6 +181,7 @@ def make_initial_state(
         "sources": [],
         "datasets": [],
         "research_questions": [],
+        "swarm_tasks": [],
         "existing_literature_summary": "",
         "data_availability_assessment": "",
         "policy_landscape_summary": "",

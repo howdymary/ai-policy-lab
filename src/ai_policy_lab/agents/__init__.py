@@ -8,6 +8,7 @@ from ai_policy_lab.agents.political_economy import PoliticalEconomyAgent
 from ai_policy_lab.agents.quantitative_analyst import QuantitativeAnalystAgent
 from ai_policy_lab.agents.research_director import ResearchDirectorAgent
 from ai_policy_lab.agents.source_quality_auditor import SourceQualityAuditorAgent
+from ai_policy_lab.agents.swarm_coordinator import SwarmCoordinatorAgent
 
 __all__ = [
     "AdversarialReviewerAgent",
@@ -20,4 +21,5 @@ __all__ = [
     "QuantitativeAnalystAgent",
     "ResearchDirectorAgent",
     "SourceQualityAuditorAgent",
+    "SwarmCoordinatorAgent",
 ]

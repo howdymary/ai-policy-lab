@@ -16,6 +16,7 @@ from ai_policy_lab.agents import (
     QuantitativeAnalystAgent,
     ResearchDirectorAgent,
     SourceQualityAuditorAgent,
+    SwarmCoordinatorAgent,
 )
 from ai_policy_lab.report import render_report
 from ai_policy_lab.runtime import ResearchRuntime
@@ -40,28 +41,50 @@ def build_graph(runtime: ResearchRuntime) -> Any:
     workflow_any.add_node("methodology_reviewer", MethodologyReviewerAgent().as_node(runtime))
     workflow_any.add_node("adversarial_reviewer", AdversarialReviewerAgent().as_node(runtime))
     workflow_any.add_node("research_director_synthesis", ResearchDirectorAgent("synthesis").as_node(runtime))
+    workflow_any.add_node("swarm_intake_plan", SwarmCoordinatorAgent("intake_plan").as_node(runtime))
+    workflow_any.add_node(
+        "swarm_midcourse_review",
+        SwarmCoordinatorAgent("midcourse_review").as_node(runtime),
+    )
+    workflow_any.add_node(
+        "swarm_analysis_review",
+        SwarmCoordinatorAgent("analysis_review").as_node(runtime),
+    )
+    workflow_any.add_node(
+        "swarm_quality_review",
+        SwarmCoordinatorAgent("quality_review").as_node(runtime),
+    )
+    workflow_any.add_node(
+        "swarm_synthesis_review",
+        SwarmCoordinatorAgent("synthesis_review").as_node(runtime),
+    )
 
     workflow.add_edge(START, "research_director_intake")
-    workflow.add_edge("research_director_intake", "literature_review")
-    workflow.add_edge("research_director_intake", "data_scout")
-    workflow.add_edge("research_director_intake", "policy_scanner")
+    workflow.add_edge("research_director_intake", "swarm_intake_plan")
+    workflow.add_edge("swarm_intake_plan", "literature_review")
+    workflow.add_edge("swarm_intake_plan", "data_scout")
+    workflow.add_edge("swarm_intake_plan", "policy_scanner")
 
     workflow.add_edge("literature_review", "research_director_midcourse")
     workflow.add_edge("data_scout", "research_director_midcourse")
     workflow.add_edge("policy_scanner", "research_director_midcourse")
 
-    workflow.add_edge("research_director_midcourse", "quantitative_analyst")
-    workflow.add_edge("research_director_midcourse", "political_economy")
-    workflow.add_edge("research_director_midcourse", "economic_complexity")
+    workflow.add_edge("research_director_midcourse", "swarm_midcourse_review")
+    workflow.add_edge("swarm_midcourse_review", "quantitative_analyst")
+    workflow.add_edge("swarm_midcourse_review", "political_economy")
+    workflow.add_edge("swarm_midcourse_review", "economic_complexity")
 
-    workflow.add_edge("quantitative_analyst", "source_quality_auditor")
-    workflow.add_edge("political_economy", "source_quality_auditor")
-    workflow.add_edge("economic_complexity", "source_quality_auditor")
+    workflow.add_edge("quantitative_analyst", "swarm_analysis_review")
+    workflow.add_edge("political_economy", "swarm_analysis_review")
+    workflow.add_edge("economic_complexity", "swarm_analysis_review")
 
+    workflow.add_edge("swarm_analysis_review", "source_quality_auditor")
     workflow.add_edge("source_quality_auditor", "methodology_reviewer")
     workflow.add_edge("methodology_reviewer", "adversarial_reviewer")
-    workflow.add_edge("adversarial_reviewer", "research_director_synthesis")
-    workflow.add_edge("research_director_synthesis", END)
+    workflow.add_edge("adversarial_reviewer", "swarm_quality_review")
+    workflow.add_edge("swarm_quality_review", "research_director_synthesis")
+    workflow.add_edge("research_director_synthesis", "swarm_synthesis_review")
+    workflow.add_edge("swarm_synthesis_review", END)
 
     return workflow.compile()
 

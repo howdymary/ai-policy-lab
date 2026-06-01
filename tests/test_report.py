@@ -42,6 +42,20 @@ def test_render_report_includes_core_sections() -> None:
             "supporting_sources": ["src-1"],
         }
     ]
+    state["swarm_tasks"] = [
+        {
+            "id": "swarm-rq-1-quantitative_analyst",
+            "research_question_id": "rq-1",
+            "objective": "Measure metro exposure.",
+            "assigned_agent": "quantitative_analyst",
+            "phase": "phase_2_analysis",
+            "status": "completed",
+            "depends_on": [],
+            "evidence_requirements": ["Use reproducible public data."],
+            "output_contract": "quantitative_results and findings",
+            "notes": "Done.",
+        }
+    ]
     report = render_report(state)
 
     assert "# AI Policy Research Lab Report" in report
@@ -49,6 +63,8 @@ def test_render_report_includes_core_sections() -> None:
     assert "## 1. Executive Summary" in report
     assert "## 4. Literature Review" in report
     assert "## 9. Counterarguments and Rebuttals" in report
+    assert "## Swarm Orchestration Ledger" in report
+    assert "[completed] quantitative_analyst" in report
     assert "## 11. Data Appendix" in report
     assert "### Retrieved Sources" in report
     assert "[src-1] Example source" in report
